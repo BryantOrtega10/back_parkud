@@ -1,6 +1,7 @@
 from flask import Flask
 from config.configuration import ProductionConfig, DevelopmentConfig
 from app.controllers.usuario_controller import usuario_bp
+from app.controllers.sede_controller import sede_bp
 from flask_cors import CORS
 
 
@@ -13,7 +14,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Registro de los controladores
 app.register_blueprint(usuario_bp, url_prefix='/usuario')
-
+app.register_blueprint(sede_bp, url_prefix='/sede')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0',port=5000)
