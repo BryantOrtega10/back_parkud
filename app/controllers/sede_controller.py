@@ -24,8 +24,8 @@ def obtener_sedes():
     if 'limit' in json_recibido:
         limit = int(json_recibido["limit"])
     
-    cuenta = DAOFactorySQL.get_ubicacion_dao().contar_total()
-    sedes = DAOFactorySQL.get_ubicacion_dao().obtener_activas(offset, limit)
+    cuenta = DAOFactorySQL.get_sede_dao().contar_total()
+    sedes = DAOFactorySQL.get_sede_dao().obtener_activas(offset, limit)
 
     return jsonify({"success": True, "message" : "Consulta realizada con éxito", "sedes" : sedes, "cuenta" : cuenta}) , HTTPStatus.OK
 
@@ -83,7 +83,7 @@ def agregar():
     req_tarifas = json_recibido["tarifas"]
     
     sede = Sede(nombre=req_nombre,latitud=req_latitud,longitud=req_longitud,fidelizacion=req_fidelizacion,horaInicio=req_horaInicio,horaFin=req_horaFin,tiempoCompleto=req_tiempoCompleto,idAdministrador=req_idAdministrador,idUbicacion=req_idUbicacion)
-    sede = DAOFactorySQL.get_tipo_parqueadero_dao().create(sede)
+    sede = DAOFactorySQL.get_sede_dao().create(sede)
 
     # {
     #     "idTipo_Parqueadero" : "1",
