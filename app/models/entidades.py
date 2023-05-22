@@ -52,7 +52,7 @@ class Tarjeta(Entidad):
     
 
 class Usuario(Entidad):
-    def __init__(self, usuario = '', contrasena = '', rol = '', cambiarContrasena = 1, contrasenaDobleFactor = '', numIntentosFallidos = 0, estado = 'A', token = None, id=None):
+    def __init__(self, usuario = '', contrasena = '', correo = '', rol = '', cambiarContrasena = 1, contrasenaDobleFactor = '', numIntentosFallidos = 0, estado = 'A', token = None, id=None):
         if id is not None:
             super().__init__(id,["no_attr","id","idUsuario","id_txt"],'idUsuario')
             self.idUsuario = id
@@ -63,6 +63,7 @@ class Usuario(Entidad):
         self.usuario = usuario
         self.contrasena = contrasena
         self.rol = rol
+        self.correo = correo
         self.cambiarContrasena = cambiarContrasena
         self.contrasenaDobleFactor = contrasenaDobleFactor
         self.numIntentosFallidos = numIntentosFallidos
@@ -70,7 +71,7 @@ class Usuario(Entidad):
         self.token = token
 
 class Cliente(Entidad):
-    def __init__(self, nombre = '', apellido = '', correo = '', telefono = '', documentoIdentidad = '', idUsuario = 0, id=None):
+    def __init__(self, nombre = '', apellido = '', telefono = '', documentoIdentidad = '', idUsuario = 0, id=None):
         if id is not None:
             super().__init__(id,["no_attr","id","idCliente","id_txt","tarjetas"], 'idCliente')
             self.idCliente = 0
@@ -80,7 +81,6 @@ class Cliente(Entidad):
 
         self.nombre = nombre
         self.apellido = apellido
-        self.correo = correo
         self.telefono = telefono
         self.documentoIdentidad = documentoIdentidad
         self.idUsuario = idUsuario
@@ -104,3 +104,93 @@ class Configuracion(Entidad):
        
         self.valor = valor
         self.tipoDeDato = tipoDeDato
+
+class Administrador(Entidad):
+    def __init__(self, nombre = '', apellido = '', documentoIdentidad = '', idUsuario = '', id=None):
+        if id is not None:
+            super().__init__(id,["no_attr","id","idAdministrador","id_txt"],'idAdministrador')
+            self.idAdministrador = id
+        else:
+            super().__init__(0,["no_attr","id","idAdministrador","id_txt"], 'idAdministrador')
+            self.idAdministrador = 0
+        
+        self.nombre = nombre
+        self.apellido = apellido
+        self.documentoIdentidad = documentoIdentidad
+        self.idUsuario = idUsuario
+
+class Sede(Entidad):
+    def __init__(self, nombre = '', latitud = '', longitud = '', fidelizacion = '', horaInicio = '', horaFin = '', tiempoCompleto = '', idAdministrador = '', idUbicacion = '', id=None):
+        if id is not None:
+            super().__init__(id,["no_attr","id","idSede","id_txt"],'idSede')
+            self.idSede = id
+        else:
+            super().__init__(0,["no_attr","id","idSede","id_txt"], 'idSede')
+            self.idSede = 0
+        
+        self.nombre = nombre
+        self.latitud = latitud
+        self.longitud = longitud
+        self.fidelizacion = fidelizacion
+        self.horaInicio = horaInicio
+        self.horaFin = horaFin
+        self.tiempoCompleto = tiempoCompleto
+        self.idAdministrador = idAdministrador
+        self.idUbicacion = idUbicacion
+
+
+class Caracteristica(Entidad):
+    def __init__(self, nombre = '', id=None):
+        if id is not None:
+            super().__init__(id,["no_attr","idCaracteristica","id_txt"],'idCaracteristica')
+            self.idCaracteristica = id
+        else:
+            super().__init__(0,["no_attr","idCaracteristica","id_txt"], 'idCaracteristica')
+            self.idCaracteristica = id
+       
+        self.nombre = nombre
+
+
+class Caracteristica_Sede(Entidad):
+    def __init__(self, idCaracteristica = '', idSede=''):
+        self.idCaracteristica = idCaracteristica
+        self.idSede = idSede
+
+
+class Tipo_Parqueadero(Entidad):
+    def __init__(self, nombre = '', id=None):
+        if id is not None:
+            super().__init__(id,["no_attr","idTipo_Parqueadero","id_txt"],'idTipo_Parqueadero')
+            self.idTipo_Parqueadero = id
+        else:
+            super().__init__(0,["no_attr","idTipo_Parqueadero","id_txt"], 'idTipo_Parqueadero')
+            self.idTipo_Parqueadero = id
+       
+        self.nombre = nombre
+
+class Tarifa(Entidad):
+    def __init__(self, valor = '', idSede = '', idTipo_Parqueadero = '', id=None):
+        if id is not None:
+            super().__init__(id,["no_attr","idTarifa","id_txt"],'idTarifa')
+            self.idTarifa = id
+        else:
+            super().__init__(0,["no_attr","idTarifa","id_txt"], 'idTarifa')
+            self.idTarifa = id
+       
+        self.valor = valor
+        self.idSede = idSede
+        self.idTipo_Parqueadero = idTipo_Parqueadero
+
+
+class Ubicacion(Entidad):
+    def __init__(self, descripcion = '', fkUbicacion = '', idTipo_Ubicacion = '', id=None):
+        if id is not None:
+            super().__init__(id,["no_attr","idUbicacion","id_txt"],'idUbicacion')
+            self.idUbicacion = id
+        else:
+            super().__init__(0,["no_attr","idUbicacion","id_txt"], 'idUbicacion')
+            self.idUbicacion = id
+       
+        self.descripcion = descripcion
+        self.fkUbicacion = fkUbicacion
+        self.idTipo_Ubicacion = idTipo_Ubicacion

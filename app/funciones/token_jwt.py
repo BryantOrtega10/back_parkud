@@ -2,6 +2,8 @@ import jwt
 from functools import wraps
 from http import HTTPStatus
 from flask import jsonify, request, current_app
+from app.models.entidades import Usuario
+from app.daos.DAOFactory import DAOFactorySQL
 
 #crear decorador para obtener token JWT
 def token_required(f):
@@ -25,3 +27,31 @@ def token_required(f):
 
     return decorated
 
+def validar_usuario_token():
+    token = request.headers.get('Authorization')
+    data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], ["HS256"])
+    usuario = Usuario(id=data["idUsuario"])
+    usuario = DAOFactorySQL.get_usuario_dao().read(usuario)
+    if usuario.estado == 'B':
+        return jsonify({"success": False, "error" : f"El usuario se encuentra bloqueado comuniquese con el administrado de PARKUD"})
+    
+    if usuario.cambiarContrasena == 1:
+        return jsonify({"success": False, "error" : f"El usuario debe cambiar de contraseña"})
+    
+    return usuario
+
+def validar_superadmin_token():
+    token = request.headers.get('Authorization')
+    data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], ["HS256"])
+    usuario = Usuario(id=data["idUsuario"])
+    usuario = DAOFactorySQL.get_usuario_dao().read(usuario)
+    if usuario.estado == 'B':
+        return jsonify({"success": False, "error" : f"El usuario se encuentra bloqueado comuniquese con el administrado de PARKUD"})
+    
+    if usuario.rol != 'S':
+        return jsonify({"success": False, "error" : f"El usuario no es superadministrador"})
+    
+    if usuario.cambiarContrasena == 1:
+        return jsonify({"success": False, "error" : f"El usuario debe cambiar de contraseña"})
+    
+    return usuario

@@ -16,3 +16,5 @@ class DevelopmentConfig(Config):
     MYSQL_BD = 'parkud'
     MYSQL_USER = 'root'
     MYSQL_PASS = ''
+    MAIL = 'parkud2023@gmail.com'
+    MAIL_PASS = 'ykugdxwzbeadvgom'
