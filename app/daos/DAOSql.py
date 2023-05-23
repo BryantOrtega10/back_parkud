@@ -102,21 +102,6 @@ class DAOGenericoSQL(DAOGen.DAOGenerico):
 
 class ClienteDAOSQL(DAOGenericoSQL, DAOGen.ClienteDAO):
 
-    def get_cliente_correo(self, correo):
-        try:
-            sql = "SELECT * FROM cliente WHERE correo = %s"
-            values = (correo,)
-            self.cur.execute(sql, values)
-            res = self.cur.fetchone()
-            if res is None:
-                return None
-            
-            res = res[1:] + (res[0],)
-            return Cliente(*res) 
-        except mysql.connector.Error as error:
-            # Capturar la excepción y manejar el error
-            print("Se produjo un error durante la ejecución de la consulta:", error)
-
     def get_cliente_usuario(self, id_usuario):
         try:
             sql = "SELECT * FROM cliente WHERE idUsuario = %s"
@@ -136,6 +121,22 @@ class TarjetaDAOSQL(DAOGenericoSQL, DAOGen.TarjetaDAO):
         pass
 
 class UsuarioDAOSQL(DAOGenericoSQL, DAOGen.UsuarioDAO):
+
+    def get_usuario_correo(self, correo):
+        try:
+            sql = "SELECT * FROM usuario WHERE correo = %s"
+            values = (correo,)
+            self.cur.execute(sql, values)
+            res = self.cur.fetchone()
+            if res is None:
+                return None
+            
+            res = res[1:] + (res[0],)
+            return Usuario(*res) 
+        except mysql.connector.Error as error:
+            # Capturar la excepción y manejar el error
+            print("Se produjo un error durante la ejecución de la consulta:", error)
+
     def get_usuario_username(self, usuario):
         try:
             sql = "SELECT * FROM usuario WHERE usuario = %s"
@@ -183,4 +184,25 @@ class UsuarioDAOSQL(DAOGenericoSQL, DAOGen.UsuarioDAO):
 
 
 class ConfiguracionDAOSQL(DAOGenericoSQL, DAOGen.ConfiguracionDAO):
+    pass
+
+class AdministradorDAOSQL(DAOGenericoSQL, DAOGen.AdministradorDAO):
+    pass
+
+class SedeDAOSQL(DAOGenericoSQL, DAOGen.SedeDAO):
+    pass
+
+class CaracteristicaDAOSQL(DAOGenericoSQL, DAOGen.CaracteristicaDAO):
+    pass
+
+class Caracteristica_SedeDAOSQL(DAOGenericoSQL, DAOGen.Caracteristica_SedeDAO):
+    pass
+
+class Tipo_ParqueaderoDAOSQL(DAOGenericoSQL, DAOGen.Tipo_ParqueaderoDAO):
+    pass
+
+class TarifaDAOSQL(DAOGenericoSQL, DAOGen.TarifaDAO):
+    pass
+
+class UbicacionDAOSQL(DAOGenericoSQL, DAOGen.UbicacionDAO):
     pass

@@ -21,9 +21,6 @@ class DAOGenerico(ABC):
         pass
 
 class ClienteDAO(DAOGenerico):
-    @abstractmethod
-    def get_cliente_correo(self, correo):
-        pass
 
     @abstractmethod
     def get_cliente_usuario(self, id_usuario):
@@ -35,6 +32,11 @@ class TarjetaDAO(DAOGenerico):
         pass
 
 class UsuarioDAO(DAOGenerico):
+
+    @abstractmethod
+    def get_usuario_correo(self, correo):
+        pass
+
     @abstractmethod
     def get_usuario_username(self, usuario):
         pass
@@ -49,4 +51,25 @@ class UsuarioDAO(DAOGenerico):
 
     
 class ConfiguracionDAO(DAOGenerico):
+    pass
+
+class AdministradorDAO(DAOGenerico):
+    pass
+
+class SedeDAO(DAOGenerico):
+    pass
+
+class CaracteristicaDAO(DAOGenerico):
+    pass
+
+class Caracteristica_SedeDAO(DAOGenerico):
+    pass
+
+class Tipo_ParqueaderoDAO(DAOGenerico):
+    pass
+
+class TarifaDAO(DAOGenerico):
+    pass
+
+class UbicacionDAO(DAOGenerico):
     pass
