@@ -49,6 +49,14 @@ class UsuarioDAO(DAOGenerico):
     def get_usuario_username_doble_factor(self, usuario, doble_factor):
         pass
 
+    @abstractmethod
+    def get_total(self):
+        pass
+
+    @abstractmethod
+    def get_administradores(self, limit=None, offset=None):
+        pass
+
     
 class ConfiguracionDAO(DAOGenerico):
     pass
@@ -57,7 +65,13 @@ class AdministradorDAO(DAOGenerico):
     pass
 
 class SedeDAO(DAOGenerico):
-    pass
+    @abstractmethod
+    def get_cantidad_sedes(self):
+        pass
+
+    @abstractmethod
+    def get_sedes_activas(self,limit,offset):
+        pass
 
 class CaracteristicaDAO(DAOGenerico):
     pass
@@ -72,4 +86,10 @@ class TarifaDAO(DAOGenerico):
     pass
 
 class UbicacionDAO(DAOGenerico):
-    pass
+    @abstractmethod
+    def get_regionales(self):
+        pass
+
+    @abstractmethod
+    def get_ubicacion_regional(self,idregional):
+        pass
