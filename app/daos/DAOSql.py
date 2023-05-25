@@ -1,6 +1,6 @@
 from flask import current_app
 from app.daos import DAOGen
-from app.models.entidades import Cliente, Tarjeta, Usuario, Configuracion
+from app.models.entidades import Cliente, Tarjeta, Usuario, Configuracion, Ubicacion, Sede
 import mysql.connector
 
 class DAOGenericoSQL(DAOGen.DAOGenerico):
@@ -182,6 +182,66 @@ class UsuarioDAOSQL(DAOGenericoSQL, DAOGen.UsuarioDAO):
             # Capturar la excepción y manejar el error
             print("Se produjo un error durante la ejecución de la consulta:", error)
 
+    def get_total(self):
+        try:
+            sql = "SELECT COUNT(*) FROM usuario WHERE rol = 'A' "
+            self.cur.execute(sql)
+            res = self.cur.fetchone()
+            if res is None:
+                return None
+
+            return res[0]
+        except mysql.connector.Error as error:
+            # Capturar la excepción y manejar el error
+            print("Se produjo un error durante la ejecución de la consulta:", error)
+
+    def get_administradores(self, limit=None, offset=None):
+        if limit is None and offset is None :
+            try:
+                sql = "SELECT * FROM usuario WHERE rol = 'A' "
+                self.cur.execute(sql)
+                res = self.cur.fetchall()
+                for r in res:
+                    print(r)
+                res = [ r[1:] + (r[0],) for r in res]
+                if res is None:
+                    return None
+                
+                return [Usuario(*r) for r in res]
+            except mysql.connector.Error as error:
+                # Capturar la excepción y manejar el error
+                print("Se produjo un error durante la ejecución de la consulta:", error)
+        elif offset is None:
+            try:
+                sql = "SELECT * FROM usuario WHERE rol = 'A' ORDER BY idUsuario LIMIT %s"
+                values = (limit)
+                self.cur.execute(sql, values)
+                res = self.cur.fetchall()
+                res = [ r[1:] + (r[0],) for r in res]
+                if res is None:
+                    return None
+                
+                return [Usuario(*r) for r in res]
+            except mysql.connector.Error as error:
+                # Capturar la excepción y manejar el error
+                print("Se produjo un error durante la ejecución de la consulta:", error)
+        else:
+            try:
+                sql = "SELECT * FROM usuario WHERE rol = 'A' ORDER BY idUsuario LIMIT %s OFFSET %s"
+                values = (limit, offset)
+                self.cur.execute(sql, values)
+                res = self.cur.fetchall()
+                res = [ r[1:] + (r[0],) for r in res]
+                if res is None:
+                    return None
+                
+                return [Usuario(*r) for r in res]
+            except mysql.connector.Error as error:
+                # Capturar la excepción y manejar el error
+                print("Se produjo un error durante la ejecución de la consulta:", error)
+
+        
+
 
 class ConfiguracionDAOSQL(DAOGenericoSQL, DAOGen.ConfiguracionDAO):
     pass
@@ -190,7 +250,32 @@ class AdministradorDAOSQL(DAOGenericoSQL, DAOGen.AdministradorDAO):
     pass
 
 class SedeDAOSQL(DAOGenericoSQL, DAOGen.SedeDAO):
-    pass
+    def get_cantidad_sedes(self):
+        try:
+            sql = "SELECT COUNT(*) FROM sede"
+            self.cur.execute(sql)
+            res = self.cur.fetchone()
+            if res is None:
+                return None
+
+            return res[0]
+        except mysql.connector.Error as error:
+            # Capturar la excepción y manejar el error
+            print("Se produjo un error durante la ejecución de la consulta:", error)
+
+    def get_sedes_activas(self,limit,offset):
+        try:
+            sql = "SELECT * FROM sede WHERE estado = 'A' ORDER BY idSede LIMIT %s OFFSET %s"
+            values = (limit, offset)
+            self.cur.execute(sql, values)
+            res = self.cur.fetchall()
+            res = [ r[1:] + (r[0],) for r in res]
+            if res is None:
+                return None
+            return [Sede(*r) for r in res]
+        except mysql.connector.Error as error:
+            # Capturar la excepción y manejar el error
+            print("Se produjo un error durante la ejecución de la consulta:", error)
 
 class CaracteristicaDAOSQL(DAOGenericoSQL, DAOGen.CaracteristicaDAO):
     pass
@@ -205,4 +290,31 @@ class TarifaDAOSQL(DAOGenericoSQL, DAOGen.TarifaDAO):
     pass
 
 class UbicacionDAOSQL(DAOGenericoSQL, DAOGen.UbicacionDAO):
-    pass
+    def get_regionales(self):
+        try:
+            sql = "SELECT * FROM ubicacion WHERE fkUbicacion is NULL "
+            self.cur.execute(sql)
+            res = self.cur.fetchall()
+            res = [ r[1:] + (r[0],) for r in res]
+            if res is None:
+                return None
+            
+            return [Ubicacion(*r) for r in res]
+        except mysql.connector.Error as error:
+            # Capturar la excepción y manejar el error
+            print("Se produjo un error durante la ejecución de la consulta:", error)
+
+    def get_ubicacion_regional(self,idregional):
+        try:
+            sql = "SELECT * FROM ubicacion WHERE fkUbicacion = %s "
+            values = (idregional,)
+            self.cur.execute(sql, values)
+            res = self.cur.fetchall()
+            res = [ r[1:] + (r[0],) for r in res]
+            if res is None:
+                return None
+            
+            return [Ubicacion(*r) for r in res]
+        except mysql.connector.Error as error:
+            # Capturar la excepción y manejar el error
+            print("Se produjo un error durante la ejecución de la consulta:", error)

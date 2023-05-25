@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from http import HTTPStatus
 from app.funciones.token_jwt import token_required, validar_usuario_token,validar_superadmin_token
-from app.models.entidades import Usuario, Cliente, Administrador, Tarjeta, Configuracion
+from app.models.entidades import Usuario, Cliente, Administrador, Tarjeta, Configuracion, Ubicacion
 from app.daos.DAOFactory import DAOFactorySQL
 import re
 import random

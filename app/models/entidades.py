@@ -52,7 +52,7 @@ class Tarjeta(Entidad):
     
 
 class Usuario(Entidad):
-    def __init__(self, usuario = '', contrasena = '', correo = '', rol = '', cambiarContrasena = 1, contrasenaDobleFactor = '', numIntentosFallidos = 0, estado = 'A', token = None, id=None):
+    def __init__(self, usuario = '', contrasena = '', rol = '', cambiarContrasena = 1, contrasenaDobleFactor = '', numIntentosFallidos = 0, estado = 'A', token = None, correo = '', id=None):
         if id is not None:
             super().__init__(id,["no_attr","id","idUsuario","id_txt"],'idUsuario')
             self.idUsuario = id
@@ -120,7 +120,7 @@ class Administrador(Entidad):
         self.idUsuario = idUsuario
 
 class Sede(Entidad):
-    def __init__(self, nombre = '', latitud = '', longitud = '', fidelizacion = '', horaInicio = '', horaFin = '', tiempoCompleto = '', idAdministrador = '', idUbicacion = '', id=None):
+    def __init__(self, nombre = '', latitud = '', longitud = '', fidelizacion = '', estado = '', horaInicio = '', horaFin = '', tiempoCompleto = '', idAdministrador = '', idUbicacion = '', id=None):
         if id is not None:
             super().__init__(id,["no_attr","id","idSede","id_txt"],'idSede')
             self.idSede = id
