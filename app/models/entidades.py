@@ -142,10 +142,10 @@ class Sede(Entidad):
 class Caracteristica(Entidad):
     def __init__(self, nombre = '', id=None):
         if id is not None:
-            super().__init__(id,["no_attr","idCaracteristica","id_txt"],'idCaracteristica')
+            super().__init__(id,["no_attr","id","idCaracteristica","id_txt"],'idCaracteristica')
             self.idCaracteristica = id
         else:
-            super().__init__(0,["no_attr","idCaracteristica","id_txt"], 'idCaracteristica')
+            super().__init__(0,["no_attr","id","idCaracteristica","id_txt"], 'idCaracteristica')
             self.idCaracteristica = id
        
         self.nombre = nombre
@@ -153,17 +153,31 @@ class Caracteristica(Entidad):
 
 class Caracteristica_Sede(Entidad):
     def __init__(self, idCaracteristica = '', idSede=''):
+        super().__init__(None,["no_attr","id","id_txt"],'id')
         self.idCaracteristica = idCaracteristica
         self.idSede = idSede
 
 
+class Parqueadero(Entidad):
+    def __init__(self, idSede = '', idTipo_Parqueadero='', id=None):
+        if id is not None:
+            super().__init__(id,["no_attr","id","idParqueadero","id_txt"],'idParqueadero')
+            self.idParqueadero = id
+        else:
+            super().__init__(0,["no_attr","id","idParqueadero","id_txt"], 'idParqueadero')
+            self.idParqueadero = id
+       
+        self.idSede = idSede
+        self.idTipo_Parqueadero = idTipo_Parqueadero
+        
+
 class Tipo_Parqueadero(Entidad):
     def __init__(self, nombre = '', id=None):
         if id is not None:
-            super().__init__(id,["no_attr","idTipo_Parqueadero","id_txt"],'idTipo_Parqueadero')
+            super().__init__(id,["no_attr","id","idTipo_Parqueadero","id_txt"],'idTipo_Parqueadero')
             self.idTipo_Parqueadero = id
         else:
-            super().__init__(0,["no_attr","idTipo_Parqueadero","id_txt"], 'idTipo_Parqueadero')
+            super().__init__(0,["no_attr","id","idTipo_Parqueadero","id_txt"], 'idTipo_Parqueadero')
             self.idTipo_Parqueadero = id
        
         self.nombre = nombre
@@ -171,10 +185,10 @@ class Tipo_Parqueadero(Entidad):
 class Tarifa(Entidad):
     def __init__(self, valor = '', idSede = '', idTipo_Parqueadero = '', id=None):
         if id is not None:
-            super().__init__(id,["no_attr","idTarifa","id_txt"],'idTarifa')
+            super().__init__(id,["no_attr","id","idTarifa","id_txt"],'idTarifa')
             self.idTarifa = id
         else:
-            super().__init__(0,["no_attr","idTarifa","id_txt"], 'idTarifa')
+            super().__init__(0,["no_attr","id","idTarifa","id_txt"], 'idTarifa')
             self.idTarifa = id
        
         self.valor = valor
@@ -185,10 +199,10 @@ class Tarifa(Entidad):
 class Ubicacion(Entidad):
     def __init__(self, descripcion = '', fkUbicacion = '', idTipo_Ubicacion = '', id=None):
         if id is not None:
-            super().__init__(id,["no_attr","idUbicacion","id_txt"],'idUbicacion')
+            super().__init__(id,["no_attr","id","idUbicacion","id_txt"],'idUbicacion')
             self.idUbicacion = id
         else:
-            super().__init__(0,["no_attr","idUbicacion","id_txt"], 'idUbicacion')
+            super().__init__(0,["no_attr","id","idUbicacion","id_txt"], 'idUbicacion')
             self.idUbicacion = id
        
         self.descripcion = descripcion

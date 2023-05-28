@@ -17,24 +17,17 @@ usuario_bp = Blueprint('usuario', __name__)
 
 @token_required
 @usuario_bp.route('/admins', methods=['GET'])
-def lista_administradores():
+@usuario_bp.route('/admins/<int:limit>', methods=['GET'])
+@usuario_bp.route('/admins/<int:limit>/<int:offset>', methods=['GET'])
+def lista_administradores(limit = 10, offset = 0):
     usuario = validar_superadmin_token()
     if not isinstance(usuario, Usuario):
         return usuario, HTTPStatus.BAD_REQUEST
-    json_recibido = request.get_json()
+    cuenta = DAOFactorySQL.get_administrador_dao().contar_total()
+    admins = DAOFactorySQL.get_administrador_dao().get_administradores(limit, offset)
+    admins = [{"idAdministrador": admin.idAdministrador, "nombre" : admin.nombre + " " + admin.apellido} for admin in admins]
 
-    offset = 0
-    if 'offset' in json_recibido:
-        offset = int(json_recibido["offset"])
-    
-    limit = 10
-    if 'limit' in json_recibido:
-        limit = int(json_recibido["limit"])
-    
-    cuenta = DAOFactorySQL.get_usuario_dao().contar_total()
-    usuarios = DAOFactorySQL.get_usuario_dao().obtener_administradores(offset, limit)
-
-    return jsonify({"success": True, "message" : "Consulta realizada con éxito", "usuarios" : usuarios, "cuenta" : cuenta}) , HTTPStatus.OK
+    return jsonify({"success": True, "message" : "Consulta realizada con éxito", "admins" : admins, "cuenta" : cuenta}) , HTTPStatus.OK
 
 
 
@@ -45,9 +38,9 @@ def obtener_administradores():
     if not isinstance(usuario, Usuario):
         return usuario, HTTPStatus.BAD_REQUEST
 
-    usuarios = DAOFactorySQL.get_usuario_dao().get_administradores()
-
-    return jsonify({"success": True, "message": "Administradores consultados correctamente", "usuarios" : usuarios}), HTTPStatus.OK
+    admins = DAOFactorySQL.get_administrador_dao().get_administradores()
+    admins = [{"idAdministrador": admin.idAdministrador, "nombre" : admin.nombre + " " + admin.apellido} for admin in admins]
+    return jsonify({"success": True, "message": "Administradores consultados correctamente", "admins" : admins}), HTTPStatus.OK
 
 
 
