@@ -45,6 +45,9 @@ def validar_superadmin_token():
     data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], ["HS256"])
     usuario = Usuario(id=data["idUsuario"])
     usuario = DAOFactorySQL.get_usuario_dao().read(usuario)
+    if usuario is None:
+        return jsonify({"success": False, "error" : f"Token Vencido"})
+    
     if usuario.estado == 'B':
         return jsonify({"success": False, "error" : f"El usuario se encuentra bloqueado comuniquese con el administrado de PARKUD"})
     

@@ -53,16 +53,22 @@ class UsuarioDAO(DAOGenerico):
     def get_total(self):
         pass
 
-    @abstractmethod
-    def get_administradores(self, limit=None, offset=None):
-        pass
-
     
 class ConfiguracionDAO(DAOGenerico):
     pass
 
-class AdministradorDAO(DAOGenerico):
+class ParqueaderoDAO(DAOGenerico):
     pass
+
+class AdministradorDAO(DAOGenerico):
+    
+    @abstractmethod
+    def contar_total(self):
+        pass
+
+    @abstractmethod
+    def get_administradores(self, limit=None, offset=None):
+        pass
 
 class SedeDAO(DAOGenerico):
     @abstractmethod
