@@ -53,6 +53,15 @@ class UsuarioDAO(DAOGenerico):
     def get_total(self):
         pass
 
+    @abstractmethod
+    def get_usuario_correo_mod(self):
+        pass
+    
+    @abstractmethod
+    def get_usuario_username_mod(self):
+        pass
+    
+
     
 class ConfiguracionDAO(DAOGenerico):
     pass
@@ -60,7 +69,15 @@ class ConfiguracionDAO(DAOGenerico):
 class ParqueaderoDAO(DAOGenerico):
     pass
 
+class OperarioDAO(DAOGenerico):
+    pass
+
+
 class AdministradorDAO(DAOGenerico):
+    
+    @abstractmethod
+    def get_admin_x_usuario(self):
+        pass
     
     @abstractmethod
     def contar_total(self):
@@ -79,11 +96,20 @@ class SedeDAO(DAOGenerico):
     def get_sedes_activas(self,limit,offset):
         pass
 
+    @abstractmethod
+    def get_sede_x_admin(self,idAdministrador):
+        pass
+
 class CaracteristicaDAO(DAOGenerico):
-    pass
+    @abstractmethod
+    def get_carac_x_sede(self,idSede):
+        pass
+    
 
 class Caracteristica_SedeDAO(DAOGenerico):
-    pass
+    @abstractmethod
+    def eliminar_x_sede(self):
+        pass
 
 class Tipo_ParqueaderoDAO(DAOGenerico):
     pass

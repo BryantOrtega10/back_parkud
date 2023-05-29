@@ -208,3 +208,18 @@ class Ubicacion(Entidad):
         self.descripcion = descripcion
         self.fkUbicacion = fkUbicacion
         self.idTipo_Ubicacion = idTipo_Ubicacion
+
+class Operario(Entidad):
+    def __init__(self, nombre = '', apellido = '', documentoIdentidad = '', idSede = '', idUsuario = '', id=None):
+        if id is not None:
+            super().__init__(id,["no_attr","id","idOperario","id_txt"],'idOperario')
+            self.idOperario = id
+        else:
+            super().__init__(0,["no_attr","id","idOperario","id_txt"], 'idOperario')
+            self.idOperario = id
+       
+        self.nombre = nombre
+        self.apellido = apellido
+        self.documentoIdentidad = documentoIdentidad
+        self.idSede = idSede
+        self.idUsuario = idUsuario
