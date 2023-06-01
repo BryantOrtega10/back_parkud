@@ -120,7 +120,7 @@ class Administrador(Entidad):
         self.idUsuario = idUsuario
 
 class Sede(Entidad):
-    def __init__(self, nombre = '', latitud = '', longitud = '', fidelizacion = '', estado = '', horaInicio = '', horaFin = '', tiempoCompleto = '', idAdministrador = '', idUbicacion = '', id=None):
+    def __init__(self, nombre = '', latitud = '', longitud = '', estado = '', fidelizacion = '', horaInicio = '', horaFin = '', tiempoCompleto = '', idAdministrador = '', idUbicacion = '', id=None):
         if id is not None:
             super().__init__(id,["no_attr","id","idSede","id_txt"],'idSede')
             self.idSede = id
@@ -131,6 +131,7 @@ class Sede(Entidad):
         self.nombre = nombre
         self.latitud = latitud
         self.longitud = longitud
+        self.estado = estado
         self.fidelizacion = fidelizacion
         self.horaInicio = horaInicio
         self.horaFin = horaFin

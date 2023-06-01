@@ -280,11 +280,25 @@ def obtener_usuario():
     if not isinstance(usuario, Usuario):
         return usuario, HTTPStatus.BAD_REQUEST
     if usuario.rol == 'C':
-        cliente = DAOFactorySQL.get_cliente_dao().get_cliente_usuario(usuario.idUsuario);
+        cliente = DAOFactorySQL.get_cliente_dao().get_cliente_usuario(usuario.idUsuario)
 
         return jsonify({"success": True, 
                         "user":{"idUsuario": usuario.idUsuario, "nombre": cliente.nombre, 
                             "apellido": cliente.apellido, "correo": usuario.correo, "rol": usuario.rol}
+                        }) , HTTPStatus.OK
+    elif usuario.rol == 'A':
+        administrador = DAOFactorySQL.get_administrador_dao().get_admin_x_usuario(usuario.idUsuario)
+
+        return jsonify({"success": True, 
+                        "user":{"idUsuario": usuario.idUsuario, "nombre": administrador.nombre, 
+                            "apellido": administrador.apellido, "correo": usuario.correo, "rol": usuario.rol}
+                        }) , HTTPStatus.OK
+    elif usuario.rol == 'O':
+        operario = DAOFactorySQL.get_operario_dao().get_operario_x_usuario(usuario.idUsuario)
+
+        return jsonify({"success": True, 
+                        "user":{"idUsuario": usuario.idUsuario, "nombre": operario.nombre, 
+                            "apellido": operario.apellido, "correo": usuario.correo, "rol": usuario.rol}
                         }) , HTTPStatus.OK
     elif usuario.rol == 'S':
         return jsonify({"success": True, "message": f"Ha iniciado sesión correctamente",

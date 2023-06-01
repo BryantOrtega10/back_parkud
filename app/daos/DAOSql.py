@@ -339,9 +339,9 @@ class SedeDAOSQL(DAOGenericoSQL, DAOGen.SedeDAO):
             values = (idAdministrador, )
             self.cur.execute(sql, values)
             res = self.cur.fetchone()
-            res = res[1:] + (res[0],)
             if res is None:
                 return None
+            res = res[1:] + (res[0],)
             return Sede(*res) 
         
         except mysql.connector.Error as error:
