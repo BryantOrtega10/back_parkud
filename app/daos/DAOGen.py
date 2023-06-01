@@ -28,7 +28,7 @@ class ClienteDAO(DAOGenerico):
 
 class TarjetaDAO(DAOGenerico):
     @abstractmethod
-    def get_tarjetas_usuario(self):
+    def get_tarjetas_cliente(self, cliente_id):
         pass
 
 class UsuarioDAO(DAOGenerico):
@@ -57,7 +57,11 @@ class AdministradorDAO(DAOGenerico):
     pass
 
 class SedeDAO(DAOGenerico):
-    pass
+    def filtrar(self, filtro):
+        pass
+
+    def get_parqueadero_disponible(self,sede, hora_inicio, hora_fin):
+        pass
 
 class CaracteristicaDAO(DAOGenerico):
     pass
@@ -72,4 +76,7 @@ class TarifaDAO(DAOGenerico):
     pass
 
 class UbicacionDAO(DAOGenerico):
+    pass
+
+class Reserva(DAOGenerico):
     pass
