@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from http import HTTPStatus
-from app.funciones.token_jwt import token_required, validar_usuario_token,validar_superadmin_token
-from app.models.entidades import Usuario, Cliente, Administrador, Tarjeta, Configuracion
+from app.funciones.token_jwt import token_required, validar_usuario_token,validar_superadmin_token, validar_admin_token
+from app.models.entidades import Usuario, Cliente, Administrador, Tarjeta, Configuracion, Operario
 from app.daos.DAOFactory import DAOFactorySQL
 import re
 import random
@@ -17,24 +17,17 @@ usuario_bp = Blueprint('usuario', __name__)
 
 @token_required
 @usuario_bp.route('/admins', methods=['GET'])
-def lista_administradores():
+@usuario_bp.route('/admins/<int:limit>', methods=['GET'])
+@usuario_bp.route('/admins/<int:limit>/<int:offset>', methods=['GET'])
+def lista_administradores(limit = 10, offset = 0):
     usuario = validar_superadmin_token()
     if not isinstance(usuario, Usuario):
         return usuario, HTTPStatus.BAD_REQUEST
-    json_recibido = request.get_json()
+    cuenta = DAOFactorySQL.get_administrador_dao().contar_total()
+    admins = DAOFactorySQL.get_administrador_dao().get_administradores(limit, offset)
+    admins = [{"idAdministrador": admin.idAdministrador, "nombre" : admin.nombre + " " + admin.apellido} for admin in admins]
 
-    offset = 0
-    if 'offset' in json_recibido:
-        offset = int(json_recibido["offset"])
-    
-    limit = 10
-    if 'limit' in json_recibido:
-        limit = int(json_recibido["limit"])
-    
-    cuenta = DAOFactorySQL.get_usuario_dao().contar_total()
-    usuarios = DAOFactorySQL.get_usuario_dao().obtener_administradores(offset, limit)
-
-    return jsonify({"success": True, "message" : "Consulta realizada con éxito", "usuarios" : usuarios, "cuenta" : cuenta}) , HTTPStatus.OK
+    return jsonify({"success": True, "message" : "Consulta realizada con éxito", "admins" : admins, "cuenta" : cuenta}) , HTTPStatus.OK
 
 
 
@@ -45,9 +38,161 @@ def obtener_administradores():
     if not isinstance(usuario, Usuario):
         return usuario, HTTPStatus.BAD_REQUEST
 
-    usuarios = DAOFactorySQL.get_usuario_dao().get_administradores()
+    admins = DAOFactorySQL.get_administrador_dao().get_administradores()
+    admins = [{"idAdministrador": admin.idAdministrador, "nombre" : admin.nombre + " " + admin.apellido} for admin in admins]
+    return jsonify({"success": True, "message": "Administradores consultados correctamente", "admins" : admins}), HTTPStatus.OK
 
-    return jsonify({"success": True, "message": "Administradores consultados correctamente", "usuarios" : usuarios}), HTTPStatus.OK
+
+@token_required
+@usuario_bp.route('/operario/<int:id>', methods=["GET"])
+def obtener_operario(id):
+    usuario = validar_admin_token()
+    if not isinstance(usuario, Usuario):
+        return usuario, HTTPStatus.BAD_REQUEST
+    
+    operario = Operario(id=id)
+    operario = DAOFactorySQL.get_operario_dao().read(operario)
+
+    usuario_op = Usuario(id=operario.idUsuario)
+    usuario_op = DAOFactorySQL.get_usuario_dao().read(usuario_op)
+
+
+    return jsonify({"success": True, "message" : "Consulta realizada con éxito", "operario": {
+        "idOperario": operario.idOperario,
+        "nombre" : operario.nombre,
+        "apellido" : operario.apellido,
+        "documentoIdentidad" : operario.documentoIdentidad,
+        "usuario" : usuario_op.usuario,
+        "correo" : usuario_op.correo
+    }}) , HTTPStatus.OK
+
+@token_required
+@usuario_bp.route('/operario/<int:id>', methods=["PUT"])
+def modificar_operario(id):
+    usuario_1 = validar_admin_token()
+    if not isinstance(usuario_1, Usuario):
+        return usuario_1, HTTPStatus.BAD_REQUEST
+    
+    json_recibido = request.get_json()
+    #Verificar que los campos obligatorios no estén vacíos. 
+    error = verificar_datos_vacios_operario(json_recibido)
+    if error is not None:
+        return error, HTTPStatus.BAD_REQUEST
+    
+    req_nombre = json_recibido["nombre"]
+    req_apellido = json_recibido["apellido"]
+    req_documentoIdentidad = json_recibido["documentoIdentidad"]
+    req_idSede = json_recibido["idSede"]
+    req_usuario = json_recibido["usuario"]
+    req_correo = json_recibido["correo"]
+
+    operario = Operario(id=id)
+    operario = DAOFactorySQL.get_operario_dao().read(operario)
+
+    #Verificar número de caracteres del usuario. 
+    if len(req_usuario.strip()) > 8 or len(req_usuario.strip()) < 5:
+        return jsonify({"success": False, "error" : "El usuario debe contener entre 5 a 8 caracteres"}) , HTTPStatus.BAD_REQUEST
+    
+    #Verificar que el usuario no exista en BD. 
+    usuario = DAOFactorySQL.get_usuario_dao().get_usuario_username_mod(req_usuario, operario.idUsuario)
+    if usuario is not None:
+        return jsonify({"success": False, "error" : "Este nombre de usuario ya se encuentra registrado utilice otro"}) , HTTPStatus.BAD_REQUEST
+
+    #Verificar que el correo sea válido y no exista en BD. 
+    error = validar_correo(req_correo)
+    if error is not None:
+        return error, HTTPStatus.BAD_REQUEST
+    
+    usuario_c = DAOFactorySQL.get_usuario_dao().get_usuario_correo_mod(req_correo, operario.idUsuario)
+    if usuario_c is not None:
+        return jsonify({"success": False, "error" : "Este correo ya se encuentra registrado utilice otro"}) , HTTPStatus.BAD_REQUEST
+
+    usuario_op = Usuario(id=operario.idUsuario)
+    usuario_op = DAOFactorySQL.get_usuario_dao().read(usuario_op)    
+    operario.nombre = req_nombre
+    operario.apellido = req_apellido
+    operario.documentoIdentidad = req_documentoIdentidad
+    operario.idSede = req_idSede
+    usuario_op.usuario = req_usuario
+    usuario_op.correo = req_correo
+
+    DAOFactorySQL.get_operario_dao().update(operario)
+    DAOFactorySQL.get_usuario_dao().update(usuario_op)
+
+    return jsonify({"success": True, "message" : "Se ha modificado el operario con éxito", "operario": {
+        "idOperario": operario.idOperario,
+        "nombre" : operario.nombre,
+        "apellido" : operario.apellido,
+        "documentoIdentidad" : operario.documentoIdentidad,
+        "usuario" : usuario_op.usuario,
+        "correo" : usuario_op.correo
+    }}) , HTTPStatus.OK
+
+
+@token_required
+@usuario_bp.route('/operario', methods=['POST'])
+def agregar_operario():
+    usuario = validar_admin_token()
+    if not isinstance(usuario, Usuario):
+        return usuario, HTTPStatus.BAD_REQUEST
+    
+    json_recibido = request.get_json()
+    #Verificar que los campos obligatorios no estén vacíos. 
+    error = verificar_datos_vacios_operario(json_recibido)
+    if error is not None:
+        return error, HTTPStatus.BAD_REQUEST
+    
+    #los datos no estan vacíos, se obtienen en variables para mayor comodidad
+    req_nombre = json_recibido["nombre"]
+    req_apellido = json_recibido["apellido"]
+    req_documentoIdentidad = json_recibido["documentoIdentidad"]
+    req_idSede = json_recibido["idSede"]
+    req_usuario = json_recibido["usuario"]
+    req_correo = json_recibido["correo"]
+
+    #Verificar número de caracteres del usuario. 
+    if len(req_usuario.strip()) > 8 or len(req_usuario.strip()) < 5:
+        return jsonify({"success": False, "error" : "El usuario debe contener entre 5 a 8 caracteres"}) , HTTPStatus.BAD_REQUEST
+    
+    #Verificar que el usuario no exista en BD. 
+    usuario = DAOFactorySQL.get_usuario_dao().get_usuario_username(req_usuario)
+    if usuario is not None:
+        return jsonify({"success": False, "error" : "Este nombre de usuario ya se encuentra registrado utilice otro"}) , HTTPStatus.BAD_REQUEST
+
+    #Verificar que el correo sea válido y no exista en BD. 
+    error = validar_correo(req_correo)
+    if error is not None:
+        return error, HTTPStatus.BAD_REQUEST
+    
+    usuario_c = DAOFactorySQL.get_usuario_dao().get_usuario_correo(req_correo)
+    if usuario_c is not None:
+        return jsonify({"success": False, "error" : "Este correo ya se encuentra registrado utilice otro"}) , HTTPStatus.BAD_REQUEST
+    
+    contra_rand = generar_contraena_aleatoria()
+    contra_rand_enc = hashlib.md5(contra_rand.encode()).hexdigest()
+    usuario = Usuario(usuario=req_usuario, contrasena=contra_rand_enc, correo = req_correo, rol='O')
+    DAOFactorySQL.get_usuario_dao().create(usuario)
+
+    operario = Operario(nombre = req_nombre, apellido = req_apellido, documentoIdentidad = req_documentoIdentidad, idSede=req_idSede, idUsuario = usuario.idUsuario)
+    DAOFactorySQL.get_operario_dao().create(operario)
+   
+    #enviar correo
+    msg = MIMEText(f'<h1>Bienvenido {req_nombre} a ParkUD</h1>'\
+                   f'<p>Te damos la bienvenida a ParkUD, recuerda que debes iniciar sesión con la siguiente contraseña <b>{contra_rand}</b></p>'\
+                   f'<p>Cordialmente <br> ParkUD Colombia</p>'                   
+                   , 'html')
+
+    msg['Subject'] = 'Se registro satisfactoriamente en ParkUD!'
+    msg['From'] = current_app.config['MAIL']
+    msg['To'] = req_correo
+
+    
+    contexto = ssl.create_default_context()
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=contexto) as server:
+        server.login(current_app.config['MAIL'], current_app.config['MAIL_PASS'])
+        server.sendmail(current_app.config['MAIL'], req_correo, msg.as_string())
+
+    return jsonify({"success": True, "message": f"Usuario registrado correctamente"}), HTTPStatus.OK
 
 
 
@@ -134,13 +279,31 @@ def obtener_usuario():
     usuario = validar_usuario_token()
     if not isinstance(usuario, Usuario):
         return usuario, HTTPStatus.BAD_REQUEST
-    
-    cliente = DAOFactorySQL.get_cliente_dao().get_cliente_usuario(usuario.idUsuario);
+    if usuario.rol == 'C':
+        cliente = DAOFactorySQL.get_cliente_dao().get_cliente_usuario(usuario.idUsuario)
 
-    return jsonify({"success": True, 
-                    "user":{"idUsuario": usuario.idUsuario, "nombre": cliente.nombre, 
-                        "apellido": cliente.apellido, "correo": usuario.correo, "rol": usuario.rol}
-                    }) , HTTPStatus.OK
+        return jsonify({"success": True, 
+                        "user":{"idUsuario": usuario.idUsuario, "nombre": cliente.nombre, 
+                            "apellido": cliente.apellido, "correo": usuario.correo, "rol": usuario.rol}
+                        }) , HTTPStatus.OK
+    elif usuario.rol == 'A':
+        administrador = DAOFactorySQL.get_administrador_dao().get_admin_x_usuario(usuario.idUsuario)
+
+        return jsonify({"success": True, 
+                        "user":{"idUsuario": usuario.idUsuario, "nombre": administrador.nombre, 
+                            "apellido": administrador.apellido, "correo": usuario.correo, "rol": usuario.rol}
+                        }) , HTTPStatus.OK
+    elif usuario.rol == 'O':
+        operario = DAOFactorySQL.get_operario_dao().get_operario_x_usuario(usuario.idUsuario)
+
+        return jsonify({"success": True, 
+                        "user":{"idUsuario": usuario.idUsuario, "nombre": operario.nombre, 
+                            "apellido": operario.apellido, "correo": usuario.correo, "rol": usuario.rol}
+                        }) , HTTPStatus.OK
+    elif usuario.rol == 'S':
+        return jsonify({"success": True, "message": f"Ha iniciado sesión correctamente",
+                        "user":{"idUsuario": usuario.idUsuario, "correo": usuario.correo, "nombre": "SuperAdministrador", "apellido" : "ParkUD" , "rol": usuario.rol}}), HTTPStatus.OK
+        
 
 
 
@@ -193,7 +356,6 @@ def doble_factor(id):
     token = jwt.encode({'idUsuario': usuario_doble_factor.idUsuario}, current_app.config['JWT_SECRET_KEY'])
     usuario_doble_factor.token = token
     DAOFactorySQL.get_usuario_dao().update(usuario_doble_factor)
-    cliente = DAOFactorySQL.get_cliente_dao().get_cliente_usuario(usuario_doble_factor.idUsuario);
     
     if usuario_doble_factor.cambiarContrasena == 1:
         return jsonify({"success": True, "message" : "¡Bienvenido!, Debes cambiar la contraseña para continuar", "token": token,
@@ -285,16 +447,60 @@ def login():
         return jsonify({"success": True, "message": f"Ha iniciado sesión correctamente, se ha enviado la contraseña de doble fator a su correo",
                         "user":{"idUsuario": usuario_login.idUsuario, "nombre": cliente.nombre, 
                         "apellido": cliente.apellido, "correo": usuario_login.correo, "rol": usuario_login.rol}}), HTTPStatus.OK
-    
-    elif usuario_login.rol == 'S':
-
-        token = jwt.encode({'idUsuario': usuario_login.idUsuario}, current_app.config['JWT_SECRET_KEY'])
-        usuario_login.token = token
+    elif usuario_login.rol == 'A':
+        administrador = DAOFactorySQL.get_administrador_dao().get_admin_x_usuario(usuario_login.idUsuario)
+        contra_rand = generar_contraena_aleatoria()
+        contra_rand_enc = hashlib.md5(contra_rand.encode()).hexdigest()
+        usuario_login.contrasenaDobleFactor = contra_rand_enc
+        
         DAOFactorySQL.get_usuario_dao().update(usuario_login)
 
+
+        msg = MIMEText(f'<h1>Contraseña doble factor</h1>'\
+                    f'<p>¡Hola <b>{req_usuario}</b>!, se ha generado la contraseña de doble factor:<br><b>{contra_rand}</b><br>'\
+                    f'<br>Ingresala para poder continuar</p>'\
+                    f'<p>Cordialmente <br> ParkUD Colombia</p>'                   
+                    , 'html')
+
+        msg['Subject'] = 'Contraseña doble factor ParkUD'
+        msg['From'] = 'info@parkud.com'
+        msg['To'] = usuario_login.correo
+
+        contexto = ssl.create_default_context()
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=contexto) as server:
+            server.login(current_app.config['MAIL'], current_app.config['MAIL_PASS'])
+            server.sendmail(current_app.config['MAIL'], usuario_login.correo, msg.as_string())
+
+        
+        return jsonify({"success": True, "message": f"Ha iniciado sesión correctamente, se ha enviado la contraseña de doble fator a su correo",
+                        "user":{"idUsuario": usuario_login.idUsuario, "nombre": administrador.nombre, 
+                        "apellido": administrador.apellido, "correo": usuario_login.correo, "rol": usuario_login.rol}}), HTTPStatus.OK
+    
+    elif usuario_login.rol == 'S':
+        contra_rand = generar_contraena_aleatoria()
+        contra_rand_enc = hashlib.md5(contra_rand.encode()).hexdigest()
+        usuario_login.contrasenaDobleFactor = contra_rand_enc
+        
+        DAOFactorySQL.get_usuario_dao().update(usuario_login)
+
+
+        msg = MIMEText(f'<h1>Contraseña doble factor</h1>'\
+                    f'<p>¡Hola <b>{req_usuario}</b>!, se ha generado la contraseña de doble factor:<br><b>{contra_rand}</b><br>'\
+                    f'<br>Ingresala para poder continuar</p>'\
+                    f'<p>Cordialmente <br> ParkUD Colombia</p>'                   
+                    , 'html')
+
+        msg['Subject'] = 'Contraseña doble factor ParkUD'
+        msg['From'] = 'info@parkud.com'
+        msg['To'] = usuario_login.correo
+
+        contexto = ssl.create_default_context()
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=contexto) as server:
+            server.login(current_app.config['MAIL'], current_app.config['MAIL_PASS'])
+            server.sendmail(current_app.config['MAIL'], usuario_login.correo, msg.as_string())
+
         return jsonify({"success": True, "message": f"Ha iniciado sesión correctamente",
-                        "user":{"idUsuario": usuario_login.idUsuario, "correo": usuario_login.correo, "rol": usuario_login.rol},
-                        "token": token}), HTTPStatus.OK
+                        "user":{"idUsuario": usuario_login.idUsuario, "correo": usuario_login.correo, "nombre": "SuperAdministrador", "apellido" : "ParkUD" , "rol": usuario_login.rol}}), HTTPStatus.OK
 
 @usuario_bp.route('/registro', methods=['POST'])
 def create():
@@ -508,3 +714,22 @@ def validar_contrasena(contrasena):
     if not re.search(r'\d', contrasena):
         return False
     return True
+    
+
+def verificar_datos_vacios_operario(json_recibido):
+    if 'nombre' not in json_recibido or len(json_recibido['nombre'].strip()) == 0:
+        return jsonify({"success": False, "error" : "Campo nombre vacio"})
+    
+    if 'apellido' not in json_recibido or len(json_recibido['apellido'].strip()) == 0:
+        return jsonify({"success": False, "error" : "Campo apellido vacio"})
+    
+    if 'documentoIdentidad' not in json_recibido or len(json_recibido['documentoIdentidad'].strip()) == 0:
+        return jsonify({"success": False, "error" : "Campo documentoIdentidad vacio"})
+    
+    if 'usuario' not in json_recibido or len(json_recibido['usuario'].strip()) == 0:
+        return jsonify({"success": False, "error" : "Campo usuario vacio"})
+    
+    if 'correo' not in json_recibido or len(json_recibido['correo'].strip()) == 0:
+        return jsonify({"success": False, "error" : "Campo correo vacio"})
+
+    return None

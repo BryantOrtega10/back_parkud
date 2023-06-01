@@ -40,16 +40,38 @@ def validar_usuario_token():
     
     return usuario
 
+def validar_admin_token():
+    token = request.headers.get('Authorization')
+    data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], ["HS256"])
+    usuario = Usuario(id=data["idUsuario"])
+    usuario = DAOFactorySQL.get_usuario_dao().read(usuario)
+    if usuario is None:
+        return jsonify({"success": False, "error" : f"Token Vencido"})
+    
+    if usuario.estado == 'B':
+        return jsonify({"success": False, "error" : f"El usuario se encuentra bloqueado comuniquese con el administrado de PARKUD"})
+    
+    if usuario.rol != 'A':
+        return jsonify({"success": False, "error" : f"El usuario del token no es administrador"})
+    
+    if usuario.cambiarContrasena == 1:
+        return jsonify({"success": False, "error" : f"El usuario debe cambiar de contraseña"})
+    
+    return usuario
+
 def validar_superadmin_token():
     token = request.headers.get('Authorization')
     data = jwt.decode(token, current_app.config['JWT_SECRET_KEY'], ["HS256"])
     usuario = Usuario(id=data["idUsuario"])
     usuario = DAOFactorySQL.get_usuario_dao().read(usuario)
+    if usuario is None:
+        return jsonify({"success": False, "error" : f"Token Vencido"})
+    
     if usuario.estado == 'B':
         return jsonify({"success": False, "error" : f"El usuario se encuentra bloqueado comuniquese con el administrado de PARKUD"})
     
     if usuario.rol != 'S':
-        return jsonify({"success": False, "error" : f"El usuario no es superadministrador"})
+        return jsonify({"success": False, "error" : f"El usuario del token no es superadministrador"})
     
     if usuario.cambiarContrasena == 1:
         return jsonify({"success": False, "error" : f"El usuario debe cambiar de contraseña"})
