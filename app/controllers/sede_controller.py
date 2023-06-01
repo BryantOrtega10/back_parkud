@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from http import HTTPStatus
-from app.funciones.token_jwt import token_required, validar_superadmin_token, validar_admin_token
+from app.funciones.token_jwt import token_required, validar_superadmin_token, validar_admin_token, validar_usuario_token
 from app.models.entidades import Sede, Caracteristica, Tipo_Parqueadero, Ubicacion, Usuario, Tarifa, Caracteristica_Sede, Parqueadero, Operario
 from app.controllers.usuario_controller import validar_correo
 from app.daos.DAOFactory import DAOFactorySQL
@@ -27,7 +27,7 @@ def obtener_sedes(limit = 10, offset = 0):
 @token_required
 @sede_bp.route('/obtener_regionales', methods=["GET"])
 def obtener_regionales():
-    usuario = validar_superadmin_token()
+    usuario = validar_usuario_token()
     if not isinstance(usuario, Usuario):
         return usuario, HTTPStatus.BAD_REQUEST
     
@@ -39,7 +39,7 @@ def obtener_regionales():
 @token_required
 @sede_bp.route('/obtener_datos/<int:id_regional>', methods=["GET"])
 def obtener_datos(id_regional):
-    usuario = validar_superadmin_token()
+    usuario = validar_usuario_token()
     if not isinstance(usuario, Usuario):
         return usuario, HTTPStatus.BAD_REQUEST
     
@@ -108,7 +108,7 @@ def mi_sede():
     sede = DAOFactorySQL.get_sede_dao().get_sede_x_admin(adminitrador.idAdministrador)
    
     if sede.idSede is None:
-        return jsonify({"success": False, "error" : "El usuario no esta relacionado a ninguna sede"}) , HTTPStatus.OK
+        return jsonify({"success": False, "error" : "El usuario no esta relacionado a ninguna sede"}) , HTTPStatus.BAD_REQUEST
     
     ciudad = Ubicacion(id=sede.idUbicacion)
     ciudad = DAOFactorySQL.get_ubicacion_dao().read(ciudad)
