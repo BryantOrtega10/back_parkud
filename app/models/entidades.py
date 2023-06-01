@@ -158,6 +158,16 @@ class Caracteristica_Sede(Entidad):
         self.idCaracteristica = idCaracteristica
         self.idSede = idSede
 
+class Parqueadero(Entidad):
+    def __init__(self, idSede = '', idTipo_Parqueadero = '', id=None):
+        if id is not None:
+            super().__init__(id,["no_attr","idParqueadero","id_txt"],'idParqueadero')
+            self.idParqueadero = id
+        else:
+            super().__init__(0,["no_attr","idParqueadero","id_txt"], 'idParqueadero')
+            self.idParqueadero = id
+        self.idSede = idSede
+        self.idTipo_Parqueadero = idTipo_Parqueadero
 
 class Parqueadero(Entidad):
     def __init__(self, idSede = '', idTipo_Parqueadero='', id=None):
@@ -195,6 +205,23 @@ class Tarifa(Entidad):
         self.valor = valor
         self.idSede = idSede
         self.idTipo_Parqueadero = idTipo_Parqueadero
+
+class Reserva(Entidad):
+    def __init__(self, horaInicio = '', horaSalida = '', registroSalida = '', estado = '', subtotal = '', idTarjeta = '', idParqueadero = '', idSede = '', id=None):
+        if id is not None:
+            super().__init__(id,["no_attr","idReserva","id_txt"],'idReserva')
+            self.idReserva = id
+        else:
+            super().__init__(0,["no_attr","idReserva","id_txt"], 'idReserva')
+            self.idReserva = id
+        self.horaInicio = horaInicio
+        self.horaSalida = horaSalida
+        self.registroSalida = registroSalida
+        self.estado = estado
+        self.subtotal = subtotal
+        self.idTarjeta = idTarjeta
+        self.idParqueadero =idParqueadero
+        self.idSede = idSede
 
 
 class Ubicacion(Entidad):

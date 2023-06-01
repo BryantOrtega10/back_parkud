@@ -183,9 +183,9 @@ INSERT INTO `parqueadero` (`idParqueadero`, `idSede`, `idTipo_Parqueadero`) VALU
 
 CREATE TABLE `reserva` (
   `idReserva` bigint(20) NOT NULL,
-  `horaInicio` time(4) DEFAULT NULL,
-  `horaSalida` time(4) DEFAULT NULL,
-  `registroSalida` time(4) DEFAULT NULL COMMENT 'Hora en la que el operador registra la salida del cliente',
+  `horaInicio` TIMESTAMP DEFAULT NULL,
+  `horaSalida` TIMESTAMP DEFAULT NULL,
+  `registroSalida` TIMESTAMP DEFAULT NULL COMMENT 'Hora en la que el operador registra la salida del cliente',
   `subtotal` bigint(20) DEFAULT NULL,
   `idTarjeta` bigint(20) DEFAULT NULL,
   `idParqueadero` int(11) DEFAULT NULL,
