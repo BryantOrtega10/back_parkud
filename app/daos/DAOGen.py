@@ -125,9 +125,6 @@ class TarifaDAO(DAOGenerico):
     pass
 
 class UbicacionDAO(DAOGenerico):
-    pass
-
-class Reserva(DAOGenerico):
     @abstractmethod
     def get_regionales(self):
         pass
@@ -136,3 +133,8 @@ class Reserva(DAOGenerico):
     def get_ubicacion_regional(self,idregional):
         pass
 
+
+class ReservaDAO(DAOGenerico):
+    @abstractmethod
+    def get_datos(self,idReserva):
+        pass

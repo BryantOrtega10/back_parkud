@@ -209,10 +209,10 @@ class Tarifa(Entidad):
 class Reserva(Entidad):
     def __init__(self, horaInicio = '', horaSalida = '', registroSalida = '', estado = '', subtotal = '', idTarjeta = '', idParqueadero = '', idSede = '', id=None):
         if id is not None:
-            super().__init__(id,["no_attr","idReserva","id_txt"],'idReserva')
+            super().__init__(id,["no_attr","idReserva","id","id_txt"],'idReserva')
             self.idReserva = id
         else:
-            super().__init__(0,["no_attr","idReserva","id_txt"], 'idReserva')
+            super().__init__(0,["no_attr","idReserva","id","id_txt"], 'idReserva')
             self.idReserva = id
         self.horaInicio = horaInicio
         self.horaSalida = horaSalida

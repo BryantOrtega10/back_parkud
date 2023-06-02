@@ -4,7 +4,7 @@ from app.funciones.token_jwt import token_required, validar_superadmin_token, va
 from app.models.entidades import Sede, Caracteristica, Tipo_Parqueadero, Ubicacion, Usuario, Tarifa, Caracteristica_Sede, Parqueadero, Operario
 from app.controllers.usuario_controller import validar_correo
 from app.daos.DAOFactory import DAOFactorySQL
-
+from datetime import datetime
 
 sede_bp = Blueprint('sede', __name__)
 
@@ -136,16 +136,17 @@ def mi_sede():
     
     operarios = DAOFactorySQL.get_operario_dao().get_operarios_x_sede(sede.idSede);
     operarios = [{"idOperario": operario.idOperario, "nombre" : operario.nombre, "apellido" : operario.nombre} for operario in operarios]
-
-
+    
+    sede.horaInicio = datetime.strptime(str(sede.horaInicio), "%H:%M:%S")
+    sede.horaFin = datetime.strptime(str(sede.horaFin), "%H:%M:%S")
     sede = {
         "idSede": sede.idSede,
         "nombre": sede.nombre,
         "latitud": sede.latitud,
         "longitud": sede.longitud,
         "fidelizacion": sede.fidelizacion,
-        "horaInicio": str(sede.horaInicio)[0:5],
-        "horaFin": str(sede.horaFin)[0:5],
+        "horaInicio": sede.horaInicio.strftime("%H:%M"),
+        "horaFin": sede.horaFin.strftime("%H:%M"),
         "tiempoCompleto": sede.tiempoCompleto,
         "ciudad": {
             "idUbicacion": ciudad.idUbicacion,
