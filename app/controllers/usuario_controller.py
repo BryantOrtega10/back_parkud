@@ -476,6 +476,35 @@ def login():
                         "user":{"idUsuario": usuario_login.idUsuario, "nombre": administrador.nombre, 
                         "apellido": administrador.apellido, "correo": usuario_login.correo, "rol": usuario_login.rol}}), HTTPStatus.OK
     
+    elif usuario_login.rol == 'O':
+        operario = DAOFactorySQL.get_operario_dao().get_operario_x_usuario(usuario_login.idUsuario)
+        contra_rand = generar_contraena_aleatoria()
+        contra_rand_enc = hashlib.md5(contra_rand.encode()).hexdigest()
+        usuario_login.contrasenaDobleFactor = contra_rand_enc
+        
+        DAOFactorySQL.get_usuario_dao().update(usuario_login)
+
+
+        msg = MIMEText(f'<h1>Contraseña doble factor</h1>'\
+                    f'<p>¡Hola <b>{req_usuario}</b>!, se ha generado la contraseña de doble factor:<br><b>{contra_rand}</b><br>'\
+                    f'<br>Ingresala para poder continuar</p>'\
+                    f'<p>Cordialmente <br> ParkUD Colombia</p>'                   
+                    , 'html')
+
+        msg['Subject'] = 'Contraseña doble factor ParkUD'
+        msg['From'] = 'info@parkud.com'
+        msg['To'] = usuario_login.correo
+
+        contexto = ssl.create_default_context()
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=contexto) as server:
+            server.login(current_app.config['MAIL'], current_app.config['MAIL_PASS'])
+            server.sendmail(current_app.config['MAIL'], usuario_login.correo, msg.as_string())
+
+        
+        return jsonify({"success": True, "message": f"Ha iniciado sesión correctamente, se ha enviado la contraseña de doble fator a su correo",
+                        "user":{"idUsuario": usuario_login.idUsuario, "nombre": operario.nombre, 
+                        "apellido": operario.apellido, "correo": usuario_login.correo, "rol": usuario_login.rol}}), HTTPStatus.OK
+    
     elif usuario_login.rol == 'S':
         contra_rand = generar_contraena_aleatoria()
         contra_rand_enc = hashlib.md5(contra_rand.encode()).hexdigest()
