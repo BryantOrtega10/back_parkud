@@ -13,7 +13,7 @@ class FiltroSQL:
         tablas = ["sede s"]
         condiciones = []
 
-        if self.region is not None and self.ciudad is not None:
+        if self.region is not None:
             tablas.extend(["ubicacion c", "ubicacion r"])
             condiciones.extend([
                 "c.idUbicacion = s.idUbicacion",
@@ -21,7 +21,7 @@ class FiltroSQL:
                 f"r.idUbicacion = {self.region}"
             ])
         
-        if self.ciudad is not None and self.region is None:
+        if self.ciudad is not None:
             tablas.append("ubicacion c")
             condiciones.append(f"c.idUbicacion = {self.ciudad}")
         
@@ -37,7 +37,6 @@ class FiltroSQL:
         
         if self.hora_inicio is not None and self.hora_fin is not None:
             tablas.append("parqueadero p")
-            tablas.append("reserva r")
             condiciones.append(f'''s.idSede = p.idSede
                 AND p.idParqueadero NOT IN (
                     SELECT r.idParqueadero
@@ -59,9 +58,11 @@ class FiltroSQL:
 
         tablas = list(set(tablas))
         columnas = "s.idSede, s.nombre, s.latitud, s.longitud, s.estado, s.fidelizacion, s.horaInicio, s.horaFin, s.tiempoCompleto, s.idAdministrador, s.idUbicacion"
-        consulta = "SELECT "+columnas+" FROM " + ", ".join(tablas)
+        consulta = "SELECT DISTINCT "+columnas+" FROM " + ", ".join(tablas)
         if condiciones:
             consulta += " WHERE " + " AND ".join(condiciones)        
+
+        print(consulta)
         return consulta
 
 
@@ -77,12 +78,12 @@ class FiltroBuilder:
         self.filtro.ciudad = id_ciudad
         return self
     
-    def tipos_parqueadero(self, tipos_parqueadero):
-        self.filtro.tipos_parqueadero = tipos_parqueadero
+    def tipos_parqueadero(self, tipo_parqueadero):
+        self.filtro.tipos_parqueadero.append(tipo_parqueadero)
         return self
     
-    def caracteristicas(self, caracteristicas):
-        self.filtro.caracteristicas = caracteristicas
+    def caracteristicas(self, caracteristica):
+        self.filtro.caracteristicas.append(caracteristica)
         return self
     
     def horas(self, hora_inicio, hora_fin):
