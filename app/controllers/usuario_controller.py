@@ -16,6 +16,26 @@ from datetime import datetime, timedelta
 usuario_bp = Blueprint('usuario', __name__)
 
 @token_required
+@usuario_bp.route('/tarjetas', methods=["GET"])
+def obtener_tarjetas():
+    usuario = validar_usuario_token()
+    if not isinstance(usuario, Usuario):
+        return usuario, HTTPStatus.BAD_REQUEST
+    
+    cliente = DAOFactorySQL.get_cliente_dao().get_cliente_usuario(usuario.idUsuario)
+    if cliente is None:
+        return jsonify({"success": False, "error" : "El usuario no es cliente"}) , HTTPStatus.BAD_REQUEST
+
+    
+    tarjetas = DAOFactorySQL.get_tarjeta_dao().get_tarjetas_cliente(cliente.idCliente)
+    for tarjeta in tarjetas:
+        print(tarjeta)
+        
+    tarjetas = [{"idTarjeta" : tarjeta.idTarjeta, "tarjeta": ("XXXX XXXX XXXX " + tarjeta.numero[12:16])} for tarjeta in tarjetas]
+
+    return jsonify({"success": True, "message" : "Consulta realizada con éxito", "tarjetas": tarjetas}) , HTTPStatus.OK
+
+@token_required
 @usuario_bp.route('/admins', methods=['GET'])
 @usuario_bp.route('/admins/<int:limit>', methods=['GET'])
 @usuario_bp.route('/admins/<int:limit>/<int:offset>', methods=['GET'])

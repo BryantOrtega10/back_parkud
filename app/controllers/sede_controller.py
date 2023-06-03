@@ -237,6 +237,7 @@ def buscar_sede():
     if not isinstance(usuario, Usuario):
         return usuario, HTTPStatus.BAD_REQUEST
     
+    
     filtro = FiltroBuilder()
 
     json_recibido = request.get_json()
