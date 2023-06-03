@@ -130,11 +130,12 @@ class TarjetaDAOSQL(DAOGenericoSQL, DAOGen.TarjetaDAO):
             self.cur.execute(sql,values)
             results = self.cur.fetchall()
             results = [ res[1:] + (res[0],) for res in results]
-            sedes = [Sede(*res) for res in results]
-            return sedes
+            tarjetas = [Tarjeta(*res) for res in results]
+            return tarjetas
         except mysql.connector.Error as error:
             # Capturar la excepción y manejar el error
             print("Se produjo un error durante la ejecución de la consulta:", error)
+
 class UsuarioDAOSQL(DAOGenericoSQL, DAOGen.UsuarioDAO):
 
     def get_usuario_correo(self, correo):
@@ -385,6 +386,8 @@ class SedeDAOSQL(DAOGenericoSQL, DAOGen.SedeDAO):
                     and r.estado <> 'F'
             )'''
             values = (id_sede,hora_inicio,hora_fin,hora_inicio,hora_fin,hora_inicio,hora_fin,)
+            self.cur.execute(sql, values)
+            return self.cur.fetchone()
         except mysql.connector.Error as error:
             # Capturar la excepción y manejar el error
             print("Se produjo un error durante la ejecución de la consulta:", error)

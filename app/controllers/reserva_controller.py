@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from http import HTTPStatus
 from app.funciones.token_jwt import token_required, validar_usuario_token
-from app.models.entidades import Reserva, Tipo_Parqueadero, Usuario, Parqueadero, Cliente
+from app.models.entidades import Reserva, Tipo_Parqueadero, Usuario, Parqueadero, Cliente, Sede
 from app.daos.DAOFactory import DAOFactorySQL
 import datetime
 from email.mime.text import MIMEText
@@ -179,3 +179,54 @@ def estado_general():
 
 
 
+@token_required
+@reserva_bp.route('/reservar', methods=['POST'])
+def reservar():
+    usuario = validar_usuario_token()
+    if not isinstance(usuario, Usuario):
+        return usuario, HTTPStatus.BAD_REQUEST
+    
+    json_recibido = request.get_json()
+
+    error = verificar_datos_reservar(json_recibido)
+    if error is not None:
+        return error, HTTPStatus.BAD_REQUEST
+    
+    horaInicio_txt = json_recibido["horaInicio"]
+    horaSalida_txt = json_recibido["horaSalida"]
+    idTarjeta_txt = json_recibido["idTarjeta"]
+    idSede_txt = json_recibido["idSede"]
+
+    parqueadero = DAOFactorySQL.get_sede_dao().get_parqueadero_disponible(idSede_txt, horaInicio_txt, horaSalida_txt)
+    if parqueadero is None:
+        return jsonify({"success": False, "error" : "No se encontraron parqueaderos disponibles"}) , HTTPStatus.BAD_REQUESTre
+
+    reserva = Reserva(horaInicio = horaInicio_txt,
+                      horaSalida = horaSalida_txt,
+                      idTarjeta = idTarjeta_txt,
+                      idParqueadero = parqueadero[0],
+                      idSede = idSede_txt)
+
+    DAOFactorySQL.get_reserva_dao().create(reserva)
+
+    return jsonify({"success": True, "message" : "Reserva registrada con éxito", "reserva": {
+        "idReserva" : reserva.idReserva,
+        "horaInicio" : reserva.horaInicio,
+        "horaSalida" : reserva.horaSalida
+    }}) , HTTPStatus.OK
+
+
+def verificar_datos_reservar(json_recibido):
+    if 'horaInicio' not in json_recibido or len(json_recibido['horaInicio']) == 0:
+        return jsonify({"success": False, "error" : "Campo horaInicio vacio"})
+    
+    if 'horaSalida' not in json_recibido or len(json_recibido['horaSalida']) == 0:
+        return jsonify({"success": False, "error" : "Campo horaSalida vacio"})
+    
+    if 'idTarjeta' not in json_recibido or len(json_recibido['idTarjeta']) == 0:
+        return jsonify({"success": False, "error" : "Campo idTarjeta vacio"})
+    
+    if 'idSede' not in json_recibido or len(json_recibido['idSede']) == 0:
+        return jsonify({"success": False, "error" : "Campo idSede vacio"})
+
+    return None

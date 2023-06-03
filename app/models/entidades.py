@@ -74,10 +74,10 @@ class Cliente(Entidad):
     def __init__(self, nombre = '', apellido = '', telefono = '', documentoIdentidad = '', idUsuario = 0, id=None):
         if id is not None:
             super().__init__(id,["no_attr","id","idCliente","id_txt","tarjetas"], 'idCliente')
-            self.idCliente = 0
+            self.idCliente = id
         else:
             super().__init__(0,["no_attr","id","idCliente","id_txt","tarjetas"], 'idCliente')
-            self.idCliente = 0
+            self.idCliente = id
 
         self.nombre = nombre
         self.apellido = apellido
@@ -207,7 +207,7 @@ class Tarifa(Entidad):
         self.idTipo_Parqueadero = idTipo_Parqueadero
 
 class Reserva(Entidad):
-    def __init__(self, horaInicio = '', horaSalida = '', registroSalida = '', estado = '', subtotal = '', idTarjeta = '', idParqueadero = '', idSede = '', id=None):
+    def __init__(self, horaInicio = '', horaSalida = '', registroSalida = None, estado = 'R', subtotal = 0, idTarjeta = '', idParqueadero = '', idSede = '', id=None):
         if id is not None:
             super().__init__(id,["no_attr","idReserva","id","id_txt"],'idReserva')
             self.idReserva = id
