@@ -5,6 +5,9 @@ from app.models.entidades import Sede, Caracteristica, Tipo_Parqueadero, Ubicaci
 from app.controllers.usuario_controller import validar_correo
 from app.daos.DAOFactory import DAOFactorySQL
 from datetime import datetime
+from app.builder_sql.query_builder import FiltroBuilder
+
+
 
 sede_bp = Blueprint('sede', __name__)
 
@@ -227,6 +230,53 @@ def modificar(idSede):
 
 
 
+@token_required
+@sede_bp.route('/buscar-sede', methods=["POST"])
+def buscar_sede():
+    usuario = validar_usuario_token()
+    if not isinstance(usuario, Usuario):
+        return usuario, HTTPStatus.BAD_REQUEST
+    
+    filtro = FiltroBuilder()
+
+    json_recibido = request.get_json()
+    if 'region' in json_recibido and len(json_recibido['region']) > 0:
+        filtro = filtro.region(json_recibido["region"])
+
+    if 'ciudad' in json_recibido and len(json_recibido['ciudad']) > 0:
+        filtro = filtro.ciudad(json_recibido["ciudad"])
+
+    if 'tipos_parqueadero' in json_recibido and len(json_recibido['tipos_parqueadero']) > 0:
+        for tp in json_recibido['tipos_parqueadero']:
+            filtro = filtro.tipos_parqueadero(tp["idTipo_Ubicacion"])
+
+    if 'caracteristicas' in json_recibido and len(json_recibido['caracteristicas']) > 0:
+        for tp in json_recibido['caracteristicas']:
+            filtro = filtro.caracteristicas(tp["idCaracteristica"])
+    
+    if  'hora_inicio' in json_recibido and len(json_recibido['hora_inicio']) > 0 and \
+        'hora_fin' in json_recibido and len(json_recibido['hora_fin']) > 0:
+        filtro = filtro.horas(json_recibido['hora_inicio'],json_recibido['hora_fin'])
+    
+    if 'fidelizacion' in json_recibido and len(json_recibido['fidelizacion']) > 0:
+        filtro = filtro.fidelizacion(json_recibido["fidelizacion"])
+    
+    sedes = DAOFactorySQL.get_sede_dao().filtrar(filtro.build())
+    if sedes is None:
+        sedes = []
+    sedes = [{
+        "idSede": sede.idSede, 
+        "nombre" : sede.nombre,
+        "latitud" : sede.latitud,
+        "longitud" : sede.longitud,
+        "estado" : sede.estado,
+        "fidelizacion" : sede.fidelizacion,
+        "horaInicio" : datetime.strptime(str(sede.horaInicio), "%H:%M:%S").strftime("%H:%M"),
+        "horaFin" : datetime.strptime(str(sede.horaFin), "%H:%M:%S").strftime("%H:%M"),
+        "tiempoCompleto" : sede.tiempoCompleto
+        } for sede in sedes]
+    
+    return jsonify({"success": True, "message" : "Sede consultada con éxito", "sedes": sedes}) , HTTPStatus.OK
 
 def verificar_datos_vacios_sede(json_recibido):
     if 'nombre' not in json_recibido or len(json_recibido['nombre'].strip()) == 0:
