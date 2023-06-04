@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from http import HTTPStatus
 from app.funciones.token_jwt import token_required, validar_usuario_token,validar_superadmin_token, validar_admin_token
-from app.models.entidades import Usuario, Cliente, Administrador, Tarjeta, Configuracion, Operario
+from app.models.entidades import Usuario, Cliente, Administrador, Tarjeta, Configuracion, Operario, Log
 from app.daos.DAOFactory import DAOFactorySQL
 import re
 import random
@@ -15,6 +15,61 @@ from datetime import datetime, timedelta
 
 usuario_bp = Blueprint('usuario', __name__)
 
+@token_required
+@usuario_bp.route('/todos', methods=['GET'])
+def obtener_todos_usuarios():
+    usuario = validar_superadmin_token()
+    if not isinstance(usuario, Usuario):
+        return usuario, HTTPStatus.BAD_REQUEST
+
+    usuarios = DAOFactorySQL.get_usuario_dao().findall(Usuario())
+    usuarios = [{"idUsuario": usu.idUsuario, "usuario" : usu.usuario, "correo": usu.correo} for usu in usuarios]
+
+    log = Log(mensaje="Consultó todos los usuarios", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
+
+    return jsonify({"success": True, "message": "Usuario consultados correctamente", "usuarios" : usuarios}), HTTPStatus.OK
+
+
+@token_required
+@usuario_bp.route('/logs', methods=['POST'])
+@usuario_bp.route('/logs/<int:limit>', methods=['POST'])
+@usuario_bp.route('/logs/<int:limit>/<int:offset>', methods=['POST'])
+def lista_logs(limit = 10, offset = 0):
+    usuario = validar_usuario_token()
+    if not isinstance(usuario, Usuario):
+        return usuario, HTTPStatus.BAD_REQUEST
+    
+    json_recibido = request.get_json()
+    #Verificar que los campos obligatorios no estén vacíos. 
+    idUsuario = None
+    if 'idUsuario' in json_recibido and len(json_recibido['idUsuario'].strip()) > 0:
+        idUsuario = json_recibido['idUsuario']
+    
+    fechaInicio = None
+    if 'fechaInicio' in json_recibido and len(json_recibido['fechaInicio'].strip()) > 0:
+        fechaInicio = json_recibido['fechaInicio']
+
+    fechaFin = None
+    if 'fechaFin' in json_recibido and len(json_recibido['fechaFin'].strip()) > 0:
+        fechaFin = json_recibido['fechaFin']
+
+    cuenta = DAOFactorySQL.get_log_dao().contar_total(idUsuario, fechaInicio, fechaFin)
+
+
+    logs = DAOFactorySQL.get_log_dao().get_logs(idUsuario, fechaInicio, fechaFin, limit, offset)
+    logs = [{
+        "id": log[0], 
+        "mensaje" : log[1],
+        "ip": log[2],
+        "fecha_hora" : log[3].strftime("%Y-%m-%d %H:%M"),
+        "usuario" : log[4]
+        } for log in logs]
+    
+    log = Log(mensaje="Consultó los Logs", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
+
+    return jsonify({"success": True, "message" : "Consulta realizada con éxito", "logs" : logs, "cuenta" : cuenta}) , HTTPStatus.OK
 
 @token_required
 @usuario_bp.route('/desbloquear-usuario', methods=["POST"])
@@ -44,13 +99,15 @@ def desbloquear_usuario():
 
     DAOFactorySQL.get_usuario_dao().update(usuario)
 
+    log = Log(mensaje="Desbloqueó al usuario: " + usuario.idUsuario, ip=request.remote_addr, idUsuario=usuario_1.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
      #enviar correo
     msg = MIMEText(f'<h1>Cuenta desbloqueada</h1>'\
                    f'<p>Se ha desbloqueado tu cuenta en parkUD, puedes ingresar con el siguiente usuario y contraseña <br>Usuario: <b>{usuario.usuario}</b> <br>Contraseña: <b>{contra_rand}</b></p>'\
                    f'<p>Cordialmente <br> ParkUD Colombia</p>'                   
                    , 'html')
 
-    msg['Subject'] = 'Se registro satisfactoriamente en ParkUD!'
+    msg['Subject'] = 'Cuenta desbloqueada ParkUD'
     msg['From'] = 'info@parkud.com'
     msg['To'] = req_correo
 
@@ -61,7 +118,6 @@ def desbloquear_usuario():
 
 
     return jsonify({"success": True, "message" : "Cambio realizado con éxito, se ha enviado un correo al usuario informando"}) , HTTPStatus.OK
-
 
 @token_required
 @usuario_bp.route('/tarjetas', methods=["GET"])
@@ -80,7 +136,8 @@ def obtener_tarjetas():
         print(tarjeta)
         
     tarjetas = [{"idTarjeta" : tarjeta.idTarjeta, "tarjeta": ("XXXX XXXX XXXX " + tarjeta.numero[12:16])} for tarjeta in tarjetas]
-
+    log = Log(mensaje="Consultó las tarjetas de él", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
     return jsonify({"success": True, "message" : "Consulta realizada con éxito", "tarjetas": tarjetas}) , HTTPStatus.OK
 
 @token_required
@@ -94,10 +151,9 @@ def lista_administradores(limit = 10, offset = 0):
     cuenta = DAOFactorySQL.get_administrador_dao().contar_total()
     admins = DAOFactorySQL.get_administrador_dao().get_administradores(limit, offset)
     admins = [{"idAdministrador": admin.idAdministrador, "nombre" : admin.nombre + " " + admin.apellido} for admin in admins]
-
+    log = Log(mensaje="Consultó los administradores con limit y offset", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
     return jsonify({"success": True, "message" : "Consulta realizada con éxito", "admins" : admins, "cuenta" : cuenta}) , HTTPStatus.OK
-
-
 
 @token_required
 @usuario_bp.route('/admins/todos', methods=['GET'])
@@ -108,8 +164,11 @@ def obtener_administradores():
 
     admins = DAOFactorySQL.get_administrador_dao().get_administradores()
     admins = [{"idAdministrador": admin.idAdministrador, "nombre" : admin.nombre + " " + admin.apellido} for admin in admins]
-    return jsonify({"success": True, "message": "Administradores consultados correctamente", "admins" : admins}), HTTPStatus.OK
 
+    log = Log(mensaje="Consultó todos los administradores", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
+
+    return jsonify({"success": True, "message": "Administradores consultados correctamente", "admins" : admins}), HTTPStatus.OK
 
 @token_required
 @usuario_bp.route('/operario/<int:id>', methods=["GET"])
@@ -124,6 +183,8 @@ def obtener_operario(id):
     usuario_op = Usuario(id=operario.idUsuario)
     usuario_op = DAOFactorySQL.get_usuario_dao().read(usuario_op)
 
+    log = Log(mensaje="Consultó al operario con usuario: " + usuario_op.usuario, ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
 
     return jsonify({"success": True, "message" : "Consulta realizada con éxito", "operario": {
         "idOperario": operario.idOperario,
@@ -184,6 +245,10 @@ def modificar_operario(id):
     usuario_op.usuario = req_usuario
     usuario_op.correo = req_correo
 
+    log = Log(mensaje="Modificó al operario con usuario: " + req_usuario, ip=request.remote_addr, idUsuario=usuario_1.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
+
+
     DAOFactorySQL.get_operario_dao().update(operario)
     DAOFactorySQL.get_usuario_dao().update(usuario_op)
 
@@ -196,13 +261,12 @@ def modificar_operario(id):
         "correo" : usuario_op.correo
     }}) , HTTPStatus.OK
 
-
 @token_required
 @usuario_bp.route('/operario', methods=['POST'])
 def agregar_operario():
-    usuario = validar_admin_token()
-    if not isinstance(usuario, Usuario):
-        return usuario, HTTPStatus.BAD_REQUEST
+    usuario_v = validar_admin_token()
+    if not isinstance(usuario_v, Usuario):
+        return usuario_v, HTTPStatus.BAD_REQUEST
     
     json_recibido = request.get_json()
     #Verificar que los campos obligatorios no estén vacíos. 
@@ -241,6 +305,9 @@ def agregar_operario():
     usuario = Usuario(usuario=req_usuario, contrasena=contra_rand_enc, correo = req_correo, rol='O')
     DAOFactorySQL.get_usuario_dao().create(usuario)
 
+    log = Log(mensaje="Creó al operario con usuario: " + req_usuario, ip=request.remote_addr, idUsuario=usuario_v.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
+
     operario = Operario(nombre = req_nombre, apellido = req_apellido, documentoIdentidad = req_documentoIdentidad, idSede=req_idSede, idUsuario = usuario.idUsuario)
     DAOFactorySQL.get_operario_dao().create(operario)
    
@@ -262,14 +329,12 @@ def agregar_operario():
 
     return jsonify({"success": True, "message": f"Usuario registrado correctamente"}), HTTPStatus.OK
 
-
-
 @token_required
 @usuario_bp.route('/agregar_administrador', methods=['POST'])
 def agregar_administrador():
-    usuario = validar_superadmin_token()
-    if not isinstance(usuario, Usuario):
-        return usuario, HTTPStatus.BAD_REQUEST
+    usuario_v = validar_superadmin_token()
+    if not isinstance(usuario_v, Usuario):
+        return usuario_v, HTTPStatus.BAD_REQUEST
     
     json_recibido = request.get_json()
     #Verificar que los campos obligatorios no estén vacíos. 
@@ -306,6 +371,9 @@ def agregar_administrador():
     contra_rand_enc = hashlib.md5(contra_rand.encode()).hexdigest()
     usuario = Usuario(usuario=req_usuario, contrasena=contra_rand_enc, correo = req_correo, rol='A')
     DAOFactorySQL.get_usuario_dao().create(usuario)
+    
+    log = Log(mensaje="Creó al administrador con usuario: " + req_usuario, ip=request.remote_addr, idUsuario=usuario_v.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
 
     administrador = Administrador(nombre = req_nombre, apellido = req_apellido, documentoIdentidad = req_documento_identidad, idUsuario = usuario.idUsuario)
     DAOFactorySQL.get_administrador_dao().create(administrador)
@@ -328,9 +396,6 @@ def agregar_administrador():
 
     return jsonify({"success": True, "message": f"Usuario registrado correctamente"}), HTTPStatus.OK
 
-
-
-
 @token_required
 @usuario_bp.route('/validar_cambio_contrasena', methods=["GET"])
 def ruta_general():
@@ -339,7 +404,6 @@ def ruta_general():
         return usuario, HTTPStatus.BAD_REQUEST
     
     return jsonify({"success": True, "message" : "El usuario ya cambio de contraseña, perfecto"}) , HTTPStatus.OK
-
 
 @token_required
 @usuario_bp.route('/obtener_usuario', methods=["GET"])
@@ -371,9 +435,6 @@ def obtener_usuario():
     elif usuario.rol == 'S':
         return jsonify({"success": True, "message": f"Ha iniciado sesión correctamente",
                         "user":{"idUsuario": usuario.idUsuario, "correo": usuario.correo, "nombre": "SuperAdministrador", "apellido" : "ParkUD" , "rol": usuario.rol}}), HTTPStatus.OK
-        
-
-
 
 @token_required
 @usuario_bp.route('/cambiar_contrasena', methods=["PUT"])
@@ -395,8 +456,11 @@ def cambiar_contrasena():
     req_nueva_contrasena = hashlib.md5(req_nueva_contrasena.encode()).hexdigest()
     usuario.contrasena = req_nueva_contrasena
     usuario.cambiarContrasena = 0
-    usuario =  DAOFactorySQL.get_usuario_dao().update(usuario)
+    log = Log(mensaje="Cambió de contraseña", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
 
+    usuario =  DAOFactorySQL.get_usuario_dao().update(usuario)
+    
     return jsonify({"success": True, "message" : "La contraseña ha sido cambiada exitosamente"}) , HTTPStatus.OK
 
 @usuario_bp.route('/login/<int:id>', methods=["POST"])
@@ -418,12 +482,16 @@ def doble_factor(id):
     usuario_doble_factor = DAOFactorySQL.get_usuario_dao().get_usuario_username_doble_factor(usuario.usuario, req_doble_factor)
     
     if usuario_doble_factor is None:
+        log = Log(mensaje="Falló la contraseña de doble factor", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+        DAOFactorySQL.get_log_dao().create(log)
         return jsonify({"success": False, "error" : "La contraseña de doble factor no coincide intente nuevamente"}) , HTTPStatus.BAD_REQUEST
 
     #expiracion = datetime.utcnow() + timedelta(minutes=60)
     token = jwt.encode({'idUsuario': usuario_doble_factor.idUsuario}, current_app.config['JWT_SECRET_KEY'])
     usuario_doble_factor.token = token
     DAOFactorySQL.get_usuario_dao().update(usuario_doble_factor)
+    log = Log(mensaje="Ingresó al sistema", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
     
     if usuario_doble_factor.cambiarContrasena == 1:
         return jsonify({"success": True, "message" : "¡Bienvenido!, Debes cambiar la contraseña para continuar", "token": token,
@@ -458,8 +526,13 @@ def login():
         usuario.numIntentosFallidos += 1
         DAOFactorySQL.get_usuario_dao().update(usuario)
 
+        log = Log(mensaje="Ingreso fallido", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+        DAOFactorySQL.get_log_dao().create(log)
+
         max_Intentos = parse_configuration("N_FAI")
         if(usuario.numIntentosFallidos >= max_Intentos):
+            log = Log(mensaje="Usuario bloqueado ha excedido el maximo numero de intentos fallidos", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+            DAOFactorySQL.get_log_dao().create(log)
             usuario.estado = 'B'
             DAOFactorySQL.get_usuario_dao().update(usuario)
             correo_super_admin = parse_configuration("C_ADM")
@@ -487,6 +560,10 @@ def login():
         return jsonify({"success": False, "error" : f"Contraseña incorrecta"}) , HTTPStatus.BAD_REQUEST
     
     usuario_login.numIntentosFallidos = 0
+
+    log = Log(mensaje="Se loggeo al sistema", ip=request.remote_addr, idUsuario=usuario_login.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
+    
     if usuario_login.rol == 'C':
         cliente = DAOFactorySQL.get_cliente_dao().get_cliente_usuario(usuario_login.idUsuario);
         contra_rand = generar_contraena_aleatoria()
@@ -658,6 +735,8 @@ def create():
                       idCliente = cliente.idCliente)
     DAOFactorySQL.get_tarjeta_dao().create(tarjeta)
 
+    log = Log(mensaje="Se registro un nuevo usuario", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
     #enviar correo
     msg = MIMEText(f'<h1>Bienvenido {req_nombre} a ParkUD</h1>'\
                    f'<p>Te damos la bienvenida a ParkUD, recuerda que debes iniciar sesión con la siguiente contraseña <b>{contra_rand}</b></p>'\
@@ -674,8 +753,6 @@ def create():
         server.sendmail(current_app.config['MAIL'], req_correo, msg.as_string())
 
     return jsonify({"success": True, "message": f"Usuario registrado correctamente"}), HTTPStatus.OK
-
-
 
 def verificar_datos_vacios_cambiar_contra(json_recibido):
     if 'nueva_contrasena' not in json_recibido or len(json_recibido['nueva_contrasena'].strip()) == 0:
@@ -811,7 +888,6 @@ def validar_contrasena(contrasena):
     if not re.search(r'\d', contrasena):
         return False
     return True
-    
 
 def verificar_datos_vacios_operario(json_recibido):
     if 'nombre' not in json_recibido or len(json_recibido['nombre'].strip()) == 0:

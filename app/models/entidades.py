@@ -159,17 +159,6 @@ class Caracteristica_Sede(Entidad):
         self.idSede = idSede
 
 class Parqueadero(Entidad):
-    def __init__(self, idSede = '', idTipo_Parqueadero = '', id=None):
-        if id is not None:
-            super().__init__(id,["no_attr","idParqueadero","id_txt"],'idParqueadero')
-            self.idParqueadero = id
-        else:
-            super().__init__(0,["no_attr","idParqueadero","id_txt"], 'idParqueadero')
-            self.idParqueadero = id
-        self.idSede = idSede
-        self.idTipo_Parqueadero = idTipo_Parqueadero
-
-class Parqueadero(Entidad):
     def __init__(self, idSede = '', idTipo_Parqueadero='', id=None):
         if id is not None:
             super().__init__(id,["no_attr","id","idParqueadero","id_txt"],'idParqueadero')
@@ -250,4 +239,16 @@ class Operario(Entidad):
         self.apellido = apellido
         self.documentoIdentidad = documentoIdentidad
         self.idSede = idSede
+        self.idUsuario = idUsuario
+
+
+class Log(Entidad):
+    def __init__(self, mensaje = '', ip = '', fecha_hora = None, idUsuario = '', id=None):
+        if id is not None:
+            super().__init__(id,["no_attr","id","id_txt"],'id')
+        else:
+            super().__init__(0,["no_attr","id","id_txt"], 'id')
+        self.mensaje = mensaje
+        self.ip = ip
+        self.fecha_hora = fecha_hora
         self.idUsuario = idUsuario

@@ -1,12 +1,11 @@
 from flask import Blueprint, request, jsonify, current_app
 from http import HTTPStatus
 from app.funciones.token_jwt import token_required, validar_superadmin_token, validar_admin_token, validar_usuario_token
-from app.models.entidades import Sede, Caracteristica, Tipo_Parqueadero, Ubicacion, Usuario, Tarifa, Caracteristica_Sede, Parqueadero, Operario
+from app.models.entidades import Sede, Caracteristica, Tipo_Parqueadero, Ubicacion, Usuario, Tarifa, Caracteristica_Sede, Parqueadero, Operario, Log
 from app.controllers.usuario_controller import validar_correo
 from app.daos.DAOFactory import DAOFactorySQL
 from datetime import datetime
 from app.builder_sql.query_builder import FiltroBuilder
-
 
 
 sede_bp = Blueprint('sede', __name__)
@@ -23,9 +22,9 @@ def obtener_sedes(limit = 10, offset = 0):
     cuenta = DAOFactorySQL.get_sede_dao().get_cantidad_sedes()
     sedes = DAOFactorySQL.get_sede_dao().get_sedes_activas(limit, offset)
     sedes = [{"idSede": sede.idSede, "nombre" : sede.nombre} for sede in sedes]
-
+    log = Log(mensaje="Consultó las sedes con limit y offset", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
     return jsonify({"success": True, "message" : "Consulta realizada con éxito", "sedes" : sedes, "cuenta" : cuenta}) , HTTPStatus.OK
-
 
 @token_required
 @sede_bp.route('/obtener_regionales', methods=["GET"])
@@ -36,6 +35,8 @@ def obtener_regionales():
     
     regionales = DAOFactorySQL.get_ubicacion_dao().get_regionales()
     regionales = [{"idUbicacion": regional.idUbicacion, "descripcion" : regional.descripcion} for regional in regionales]
+    log = Log(mensaje="Consultó las regionales", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
 
     return jsonify({"success": True, "message" : "Consulta realizada con éxito", "regionales" : regionales}) , HTTPStatus.OK
 
@@ -53,8 +54,10 @@ def obtener_datos(id_regional):
     tiposParqueaderos = DAOFactorySQL.get_tipo_parqueadero_dao().findall(Tipo_Parqueadero())
     tiposParqueaderos = [{"idTipo_Parqueadero": tiposParqueadero.idTipo_Parqueadero, "nombre" : tiposParqueadero.nombre} for tiposParqueadero in tiposParqueaderos]
 
-    return jsonify({"success": True, "message" : "Consulta realizada con éxito", "ciudades" : ciudades, "caracteristicas" : caracteristicas, "tiposParqueaderos" : tiposParqueaderos}) , HTTPStatus.OK
+    log = Log(mensaje="Consultó las ciudades y los datos que componen una sede", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
 
+    return jsonify({"success": True, "message" : "Consulta realizada con éxito", "ciudades" : ciudades, "caracteristicas" : caracteristicas, "tiposParqueaderos" : tiposParqueaderos}) , HTTPStatus.OK
 
 @token_required
 @sede_bp.route('/agregar', methods=["POST"])
@@ -95,10 +98,12 @@ def agregar():
         caracteristica_sede = Caracteristica_Sede(idCaracteristica=r_caracteristica["idCaracteristica"], idSede=sede.idSede)
         DAOFactorySQL.get_caracteristica_sede_dao().create(caracteristica_sede)
 
+    log = Log(mensaje="Agregó una la sede: " + req_nombre, ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
+
     return jsonify({"success": True, "message" : "Sede creada con éxito", "sede": {
         "idSede": sede.idSede, "nombre" : sede.nombre
     }}) , HTTPStatus.OK
-
 
 @token_required
 @sede_bp.route('/mi-sede', methods=["GET"])
@@ -164,7 +169,10 @@ def mi_sede():
         "cupos": cupos,
         "operarios" : operarios    
     }
-    print(sede)
+    
+    log = Log(mensaje="Consultó los datos de la sede que tiene relacionada", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
+
     return jsonify({"success": True, "message" : "Consulta realizada con éxito", 
                     "sede" : sede,
                     "regionales": regionales,
@@ -172,7 +180,6 @@ def mi_sede():
                     "caracteristicas": caracteristicas,
                     "tiposParqueaderos" : tiposParqueaderos
                     }) , HTTPStatus.OK
-    
 
 @token_required
 @sede_bp.route('/editar/<int:idSede>', methods=["PUT"])
@@ -199,6 +206,9 @@ def modificar(idSede):
     req_caracteristicas = json_recibido["caracteristicas"]
     req_tarifas = json_recibido["tarifas"]
     
+    log = Log(mensaje="Modificó la sede: " + req_nombre, ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
+
     sede = Sede(id= idSede)
     sede = DAOFactorySQL.get_sede_dao().read(sede)
     sede.nombre = req_nombre 
@@ -228,8 +238,6 @@ def modificar(idSede):
         "idSede": sede.idSede, "nombre" : sede.nombre
     }}) , HTTPStatus.OK
 
-
-
 @token_required
 @sede_bp.route('/buscar-sede', methods=["POST"])
 def buscar_sede():
@@ -237,7 +245,9 @@ def buscar_sede():
     if not isinstance(usuario, Usuario):
         return usuario, HTTPStatus.BAD_REQUEST
     
-    
+    log = Log(mensaje="Buscó sedes", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
+
     filtro = FiltroBuilder()
 
     json_recibido = request.get_json()

@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from http import HTTPStatus
 from app.funciones.token_jwt import token_required, validar_usuario_token
-from app.models.entidades import Reserva, Tipo_Parqueadero, Usuario, Parqueadero, Cliente, Sede
+from app.models.entidades import Reserva, Tipo_Parqueadero, Usuario, Parqueadero, Cliente, Sede, Log
 from app.daos.DAOFactory import DAOFactorySQL
 import datetime
 from email.mime.text import MIMEText
@@ -39,7 +39,8 @@ def obtener_reserva(id_reserva):
         "nombreCliente" : reserva[5],
         "apellidoCliente" : reserva[6]
     }
-
+    log = Log(mensaje="Consultó la reserva " + id_reserva, ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
     return jsonify({"success": True, "message" : "Consulta realizada con éxito", "reserva" : reserva}) , HTTPStatus.OK
 
 
@@ -64,6 +65,9 @@ def registrar_entrada(id_reserva):
     reserva.estado = 'A'
     DAOFactorySQL.get_reserva_dao().update(reserva)
 
+    log = Log(mensaje="Registró la entrada de la reserva " + id_reserva, ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
+
     return jsonify({"success": True, "message" : "Entrada registrada con éxito"}) , HTTPStatus.OK
 
 
@@ -86,6 +90,9 @@ def enviar_registro():
     if error is not None:
         return error, HTTPStatus.BAD_REQUEST
     
+    log = Log(mensaje="Envió link de registro al cliente con correo: " + req_correo, ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
+
     msg = MIMEText(f'<h1>Solicitud de registro</h1>'\
                 f'<p>Has solicitado el registro en ParkUD, el enlace para registrarte es: <a href="http://google.com.co">Link</a></p>'\
                 f'<p>Cordialmente <br> ParkUD Colombia</p>'                   
@@ -154,6 +161,8 @@ def registrar_salida(id_reserva):
     DAOFactorySQL.get_reserva_dao().update(reserva)
 
     #PAGO de tarjeta
+    log = Log(mensaje="Registró la salida de la reserva " + id_reserva, ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
 
     return jsonify({"success": True, "message" : "Salida registrada con éxito" + msj}) , HTTPStatus.OK
 
@@ -184,6 +193,8 @@ def estado_general():
                 } for reserva in reservas]
         parqueaderos_json.append(place_parq)
 
+    log = Log(mensaje="Consultó el estado general de una sede", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
 
     return jsonify({"success": True, "message" : "Consulta registrada con éxito", "parqueaderos" : parqueaderos_json}) , HTTPStatus.OK
 
@@ -222,7 +233,8 @@ def reservar():
                       idSede = idSede_txt)
 
     DAOFactorySQL.get_reserva_dao().create(reserva)
-    
+    log = Log(mensaje="Realizó una reserva", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    DAOFactorySQL.get_log_dao().create(log)
     return jsonify({"success": True, "message" : "Reserva registrada con éxito", "reserva": {
         "idReserva" : reserva.idReserva,
         "horaInicio" : reserva.horaInicio,
