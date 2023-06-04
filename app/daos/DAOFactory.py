@@ -1,4 +1,4 @@
-from app.daos.DAOSql import ClienteDAOSQL, TarjetaDAOSQL, UsuarioDAOSQL, ConfiguracionDAOSQL, AdministradorDAOSQL, SedeDAOSQL, CaracteristicaDAOSQL, Caracteristica_SedeDAOSQL, Tipo_ParqueaderoDAOSQL, TarifaDAOSQL, UbicacionDAOSQL, ParqueaderoDAOSQL, OperarioDAOSQL, ReservaDAOSQL
+from app.daos.DAOSql import ClienteDAOSQL, TarjetaDAOSQL, UsuarioDAOSQL, ConfiguracionDAOSQL, AdministradorDAOSQL, SedeDAOSQL, CaracteristicaDAOSQL, Caracteristica_SedeDAOSQL, Tipo_ParqueaderoDAOSQL, TarifaDAOSQL, UbicacionDAOSQL, ParqueaderoDAOSQL, OperarioDAOSQL, ReservaDAOSQL, LogDAOSQL
 
 class DAOFactorySQL:
     _instance = None
@@ -16,6 +16,7 @@ class DAOFactorySQL:
     _parqueadero_dao = None
     _operario_dao = None
     _reserva_dao = None
+    _log_dao = None
 
     def __new__(self, *args, **kwargs):
         if not self._instance:
@@ -105,3 +106,9 @@ class DAOFactorySQL:
         if not self._reserva_dao:
             self._reserva_dao = ReservaDAOSQL()
         return self._reserva_dao
+    
+    @classmethod            
+    def get_log_dao(self):
+        if not self._log_dao:
+            self._log_dao = LogDAOSQL()
+        return self._log_dao

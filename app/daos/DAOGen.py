@@ -138,3 +138,12 @@ class ReservaDAO(DAOGenerico):
     @abstractmethod
     def get_datos(self,idReserva):
         pass
+
+class LogDAO(DAOGenerico):
+    @abstractmethod
+    def contar_total(self,idUsuario, fechaInicio, fechaFin):
+        pass
+
+    @abstractmethod
+    def get_logs(self, idUsuario, fechaInicio, fechaFin, limit, offset):
+        pass

@@ -1,7 +1,7 @@
 from flask import current_app
 from app.daos import DAOGen
 
-from app.models.entidades import Cliente, Tarjeta, Usuario, Configuracion, Ubicacion, Sede, Administrador, Caracteristica, Tipo_Parqueadero, Operario, Tarifa, Parqueadero, Reserva
+from app.models.entidades import Cliente, Tarjeta, Usuario, Configuracion, Ubicacion, Sede, Administrador, Caracteristica, Tipo_Parqueadero, Operario, Tarifa, Parqueadero, Reserva, Log
 
 import mysql.connector
 
@@ -591,6 +591,65 @@ class ReservaDAOSQL(DAOGenericoSQL, DAOGen.ReservaDAO):
             values = (dia,dia,idParqueadero,idSede,)
             self.cur.execute(sql, values)
             return self.cur.fetchall()
+        except mysql.connector.Error as error:
+            # Capturar la excepción y manejar el error
+            print("Se produjo un error durante la ejecución de la consulta:", error)
+
+class LogDAOSQL(DAOGenericoSQL, DAOGen.LogDAO):
+    
+    def contar_total(self, idUsuario, fechaInicio, fechaFin):        
+        try:
+            sql = "SELECT count(id) as cuenta FROM log WHERE 1 = 1 "
+            values = ()
+            if idUsuario is not None:
+                sql += " AND idUsuario = %s"
+                values += (idUsuario,)
+
+            if fechaInicio is not None:
+                sql += " AND fecha_hora >= %s"
+                values += (fechaInicio,)
+
+            if fechaFin is not None:
+                sql += " AND fecha_hora <= %s"
+                values += (fechaFin,)
+
+            self.cur.execute(sql, values)
+            
+            res = self.cur.fetchone()
+            return res[0]
+        
+        except mysql.connector.Error as error:
+            # Capturar la excepción y manejar el error
+            print("Se produjo un error durante la ejecución de la consulta:", error)
+
+
+    def get_logs(self, idUsuario, fechaInicio, fechaFin, limit, offset):        
+        try:
+            sql = "SELECT l.id, l.mensaje, l.ip, l.fecha_hora, u.usuario FROM log l JOIN usuario u ON u.idUsuario = l.idUsuario WHERE 1 = 1 "
+            values = ()
+            if idUsuario is not None:
+                sql += " AND l.idUsuario = %s"
+                values += (idUsuario,)
+
+            if fechaInicio is not None:
+                sql += " AND l.fecha_hora >= %s"
+                values += (fechaInicio,)
+
+            if fechaFin is not None:
+                sql += " AND l.fecha_hora <= %s"
+                values += (fechaFin,)
+
+            sql += " LIMIT %s "
+            sql += " OFFSET %s "
+            values += (limit,offset,)
+            self.cur.execute(sql, values)
+            
+            res = self.cur.fetchall()
+            if res is None:
+                return []
+            
+            return res
+        
         except mysql.connector.Error as error:
             # Capturar la excepción y manejar el error
             print("Se produjo un error durante la ejecución de la consulta:", error)
