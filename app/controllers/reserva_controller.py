@@ -7,6 +7,7 @@ import datetime
 from email.mime.text import MIMEText
 from app.controllers.usuario_controller import validar_correo
 import smtplib, ssl
+from zoneinfo import ZoneInfo
 
 reserva_bp = Blueprint('reserva', __name__)
 
@@ -121,7 +122,7 @@ def registrar_salida(id_reserva):
         return jsonify({"success": False, "error" : "La reserva aun no ha iniciado"}) , HTTPStatus.BAD_REQUEST
     
     reserva.estado = 'F'
-    fechaActual = datetime.datetime.now()
+    fechaActual = datetime.datetime.now(ZoneInfo("America/Bogota"))
     reserva.registroSalida = fechaActual.strftime("%Y-%m-%d %H:%M:%S")
     
     fechaInicio = datetime.datetime.strptime(str(reserva.horaInicio), "%Y-%m-%d %H:%M:%S")
@@ -139,12 +140,22 @@ def registrar_salida(id_reserva):
         return jsonify({"success": False, "error" : "Tarifa no encontrada para la sede y parqueadero de la reserva"}) , HTTPStatus.BAD_REQUEST
 
     reserva.subtotal = minutos * tarifa.valor
+    msj = ", el valor pagado fue " + str(reserva.subtotal)
+
+    sede = Sede(id=reserva.idSede)
+    sede = DAOFactorySQL.get_sede_dao().read(sede)
+    if sede.fidelizacion == 1:
+        cuenta = DAOFactorySQL.get_reserva_dao().cuenta_reservas(sede.idSede, reserva.idTarjeta)
+        if cuenta[0] > 5:
+            reserva.subtotal = reserva.subtotal * 0.5
+            msj = ", el valor pagado fue del 50%" + str(reserva.subtotal)
+
 
     DAOFactorySQL.get_reserva_dao().update(reserva)
 
     #PAGO de tarjeta
 
-    return jsonify({"success": True, "message" : "Salida registrada con éxito"}) , HTTPStatus.OK
+    return jsonify({"success": True, "message" : "Salida registrada con éxito" + msj}) , HTTPStatus.OK
 
 
 @token_required
@@ -159,9 +170,8 @@ def estado_general():
         return jsonify({"success": False, "error" : "El usuario no es un operario"}) , HTTPStatus.BAD_REQUEST
     
     parqueaderos = DAOFactorySQL.get_sede_dao().get_parqueaderos_tipo(operario.idSede)
-    fechaActual = datetime.datetime.now()
+    fechaActual = datetime.datetime.now(ZoneInfo("America/Bogota"))
     fecha_txt = fechaActual.strftime("%Y-%m-%d")
-
     parqueaderos_json = []
     for parqueadero in parqueaderos:
         place_parq = {"idParqueadero": parqueadero[0], "tipoParqueadero" : parqueadero[1], "reservas": []}
@@ -197,9 +207,13 @@ def reservar():
     idTarjeta_txt = json_recibido["idTarjeta"]
     idSede_txt = json_recibido["idSede"]
 
+    fechaActual = datetime.datetime.now(ZoneInfo("America/Bogota"))
+    horaInicio_txt = fechaActual.strftime("%Y-%m-%d") + " " + horaInicio_txt
+    horaSalida_txt = fechaActual.strftime("%Y-%m-%d") + " " + horaSalida_txt
+
     parqueadero = DAOFactorySQL.get_sede_dao().get_parqueadero_disponible(idSede_txt, horaInicio_txt, horaSalida_txt)
     if parqueadero is None:
-        return jsonify({"success": False, "error" : "No se encontraron parqueaderos disponibles"}) , HTTPStatus.BAD_REQUESTre
+        return jsonify({"success": False, "error" : "No se encontraron parqueaderos disponibles"}) , HTTPStatus.BAD_REQUEST
 
     reserva = Reserva(horaInicio = horaInicio_txt,
                       horaSalida = horaSalida_txt,
@@ -208,7 +222,7 @@ def reservar():
                       idSede = idSede_txt)
 
     DAOFactorySQL.get_reserva_dao().create(reserva)
-
+    
     return jsonify({"success": True, "message" : "Reserva registrada con éxito", "reserva": {
         "idReserva" : reserva.idReserva,
         "horaInicio" : reserva.horaInicio,
