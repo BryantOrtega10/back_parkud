@@ -15,7 +15,7 @@ class DAOGenericoSQL(DAOGen.DAOGenerico):
             password=current_app.config['MYSQL_PASS'],
             database=current_app.config['MYSQL_BD']
         )
-        self.cur = self.con.cursor()
+        self.cur = self.con.cursor(buffered=True)
 
     def create(self,entity):
         try:
@@ -551,7 +551,20 @@ class UbicacionDAOSQL(DAOGenericoSQL, DAOGen.UbicacionDAO):
             print("Se produjo un error durante la ejecución de la consulta:", error)
 
 class ReservaDAOSQL(DAOGenericoSQL, DAOGen.ReservaDAO):
-    
+        
+    def cuenta_reservas(self,idSede, idTarjeta):
+        try:
+            sql = '''SELECT count(idReserva) FROM `reserva` r WHERE r.idSede = %s
+                    and r.idTarjeta in (SELECT t2.idTarjeta FROM tarjeta t2 WHERE t2.idCliente in 
+                    (SELECT t.idCliente FROM tarjeta t WHERE t.idTarjeta = %s));'''
+            values = (idSede,idTarjeta)
+            self.cur.execute(sql, values)
+            res = self.cur.fetchone()
+            return res
+        except mysql.connector.Error as error:
+            # Capturar la excepción y manejar el error
+            print("Se produjo un error durante la ejecución de la consulta:", error)
+
     def get_datos(self,idReserva):
         try:
             sql = '''SELECT r.idReserva, r.horaInicio, r.horaSalida, p.idParqueadero, 

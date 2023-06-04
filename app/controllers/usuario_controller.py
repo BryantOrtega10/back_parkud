@@ -15,6 +15,54 @@ from datetime import datetime, timedelta
 
 usuario_bp = Blueprint('usuario', __name__)
 
+
+@token_required
+@usuario_bp.route('/desbloquear-usuario', methods=["POST"])
+def desbloquear_usuario():
+    usuario_1 = validar_superadmin_token()
+    if not isinstance(usuario_1, Usuario):
+        return usuario_1, HTTPStatus.BAD_REQUEST
+    
+    json_recibido = request.get_json()
+    if 'correo' not in json_recibido or len(json_recibido['correo'].strip()) == 0:
+        return jsonify({"success": False, "error" : "Campo correo vacio"}), HTTPStatus.BAD_REQUEST
+
+    req_correo = json_recibido["correo"]
+
+    usuario = DAOFactorySQL.get_usuario_dao().get_usuario_correo(req_correo)
+    if usuario is None:
+        return jsonify({"success": False, "error" : "No se encontro un usuario con ese correo"}), HTTPStatus.BAD_REQUEST
+    
+
+    contra_rand = generar_contraena_aleatoria()
+    contra_rand_enc = hashlib.md5(contra_rand.encode()).hexdigest()
+
+    usuario.numIntentosFallidos = 0
+    usuario.contrasena = contra_rand_enc
+    usuario.estado = 'A'
+    usuario.cambiarContrasena = 1
+
+    DAOFactorySQL.get_usuario_dao().update(usuario)
+
+     #enviar correo
+    msg = MIMEText(f'<h1>Cuenta desbloqueada</h1>'\
+                   f'<p>Se ha desbloqueado tu cuenta en parkUD, puedes ingresar con el siguiente usuario y contraseña <br>Usuario: <b>{usuario.usuario}</b> <br>Contraseña: <b>{contra_rand}</b></p>'\
+                   f'<p>Cordialmente <br> ParkUD Colombia</p>'                   
+                   , 'html')
+
+    msg['Subject'] = 'Se registro satisfactoriamente en ParkUD!'
+    msg['From'] = 'info@parkud.com'
+    msg['To'] = req_correo
+
+    contexto = ssl.create_default_context()
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=contexto) as server:
+        server.login(current_app.config['MAIL'], current_app.config['MAIL_PASS'])
+        server.sendmail(current_app.config['MAIL'], req_correo, msg.as_string())
+
+
+    return jsonify({"success": True, "message" : "Cambio realizado con éxito, se ha enviado un correo al usuario informando"}) , HTTPStatus.OK
+
+
 @token_required
 @usuario_bp.route('/tarjetas', methods=["GET"])
 def obtener_tarjetas():
