@@ -595,6 +595,59 @@ class ReservaDAOSQL(DAOGenericoSQL, DAOGen.ReservaDAO):
             # Capturar la excepción y manejar el error
             print("Se produjo un error durante la ejecución de la consulta:", error)
 
+
+    def get_report(self, idReserva, ciudad, region, sede, tipoParqueadero, fechaInicio, fechaFin, registroSalida, cliente, total, administrador, cantidad):
+        try:
+            sql = "SELECT "
+            if idReserva is not None:
+                sql += "r.idReserva ,"
+            if ciudad is not None:
+                sql += "u.descripcion ciudad ,"
+            if region is not None:
+                sql += "u2.descripcion region ,"
+            if sede is not None:
+                sql += "s.nombre sede ,"
+            if tipoParqueadero is not None:
+                sql += "tp.nombre tipoParqueadero ,"
+            if fechaInicio is not None:
+                sql += "r.horaInicio fechaInicio ,"
+            if fechaFin is not None:
+                sql += "r.horaSalida fechaSalida ,"
+            if registroSalida is not None:
+                sql += "r.registroSalida ,"
+            if cliente is not None:
+                sql += "concat(c.nombre,' ', c.apellido) nombreCliente ,"
+            if total is not None:
+                sql += "r.subtotal ,"
+            if administrador is not None:
+                sql += "concat(a.nombre,' ',a.apellido) nombreAdmin ,"
+            if cantidad is not None:
+                sql += "co.cuenta cantidad_op ,"
+
+            sql = sql[0:-1]
+            sql += '''  from reserva as r
+                        JOIN parqueadero p on p.idParqueadero  = r.idParqueadero 
+                        JOIN sede s on s.idSede = r.idSede
+                        JOIN ubicacion u on s.idUbicacion = u.idUbicacion
+                        JOIN ubicacion u2 ON u.fkUbicacion = u2.idUbicacion
+                        JOIN tipo_parqueadero tp on p.idTipo_Parqueadero = tp.idTipo_Parqueadero
+                        JOIN tarjeta t on t.idTarjeta = r.idTarjeta
+                        JOIN cliente c on c.idCliente = t.idCliente
+                        JOIN administrador a on a.idAdministrador = s.idAdministrador
+                        JOIN (SELECT count(o.idOperario) cuenta, o.idSede from operario o GROUP by o.idSede) co on co.idSede = s.idSede
+                        WHERE r.estado = 'F'
+                    '''
+            self.cur.execute(sql)
+            report = self.cur.fetchall()
+            if report is None:
+                return []
+            return report
+        except mysql.connector.Error as error:
+            # Capturar la excepción y manejar el error
+            print("Se produjo un error durante la ejecución de la consulta:", error)
+
+
+
 class LogDAOSQL(DAOGenericoSQL, DAOGen.LogDAO):
     
     def contar_total(self, idUsuario, fechaInicio, fechaFin):        
