@@ -405,9 +405,125 @@ class SedeDAOSQL(DAOGenericoSQL, DAOGen.SedeDAO):
         except mysql.connector.Error as error:
             # Capturar la excepción y manejar el error
             print("Se produjo un error durante la ejecución de la consulta:", error)
-            res = res[1:] + (res[0],)
-            return Sede(*res) 
-            
+        
+    def get_estadistica_cupos(self,regional, sede):
+        try:
+
+            if regional is None and sede is None:
+                sql = '''SELECT (count(p.idParqueadero) / (SELECT count(p2.idParqueadero) from parqueadero p2)) porcentaje_ocup, 
+                        tp.nombre 
+                        FROM parqueadero p 
+                        JOIN tipo_parqueadero tp on tp.idTipo_Parqueadero = p.idTipo_Parqueadero GROUP by tp.nombre
+                    '''
+                self.cur.execute(sql)
+            elif sede is not None:
+                sql = '''SELECT (count(p.idParqueadero) / (SELECT count(p2.idParqueadero) from parqueadero p2 WHERE p2.idSede = %s)) porcentaje_ocup, 
+                        tp.nombre 
+                        FROM parqueadero p 
+                        JOIN tipo_parqueadero tp on tp.idTipo_Parqueadero = p.idTipo_Parqueadero 
+                        WHERE p.idSede = %s GROUP by tp.nombre
+                    '''
+                values = (sede,sede,)
+                self.cur.execute(sql, values)
+            elif regional is not None:
+                sql = '''SELECT (count(p.idParqueadero) / (
+                            SELECT count(p2.idParqueadero) from parqueadero p2 
+                            JOIN sede s2 on p2.idSede = s2.idSede 
+                            JOIN ubicacion u2 on s2.idUbicacion = u2.idUbicacion
+                            WHERE u2.fkUbicacion = %s
+                            )) porcentaje_ocup, 
+                        tp.nombre 
+                        FROM parqueadero p 
+                        JOIN tipo_parqueadero tp on tp.idTipo_Parqueadero = p.idTipo_Parqueadero
+                        JOIN sede s on p.idSede = s.idSede 
+                        JOIN ubicacion u on s.idUbicacion = u.idUbicacion
+                        WHERE u.fkUbicacion = %s
+                        GROUP by tp.nombre
+                    '''
+                values = (regional,regional,)
+                self.cur.execute(sql, values)
+            res = self.cur.fetchall()
+            if res is None:
+                return []
+            return res
+        except mysql.connector.Error as error:
+            # Capturar la excepción y manejar el error
+            print("Se produjo un error durante la ejecución de la consulta:", error)
+
+    def get_estadistica_reservas(self,regional, sede):
+        try:
+
+            if regional is None and sede is None:
+                sql = '''SELECT MONTH(r.horaInicio) AS Mes, COUNT(*) AS Cantidad_Reservas
+                        FROM reserva r GROUP BY MONTH(r.horaInicio);
+                    '''
+                self.cur.execute(sql)
+            elif sede is not None:
+                sql = '''   SELECT MONTH(r.horaInicio) AS Mes, COUNT(*) AS Cantidad_Reservas
+                            FROM reserva r
+                            JOIN parqueadero p ON r.idParqueadero = p.idParqueadero
+                            WHERE p.idSede = %s
+                            GROUP BY MONTH(r.horaInicio);
+                    '''
+                values = (sede,)
+                self.cur.execute(sql, values)
+            elif regional is not None:
+                sql = '''SELECT MONTH(r.horaInicio) AS Mes, COUNT(*) AS Cantidad_Reservas
+                        FROM reserva r
+                        JOIN parqueadero p ON r.idParqueadero = p.idParqueadero
+                        JOIN sede s ON p.idSede = s.idSede
+                        JOIN ubicacion u ON s.idUbicacion = u.idUbicacion
+                        WHERE u.fkUbicacion = %s
+                        GROUP BY MONTH(r.horaInicio);
+                    '''
+                values = (regional,)
+                self.cur.execute(sql, values)
+            res = self.cur.fetchall()
+            if res is None:
+                return []
+            return res
+        except mysql.connector.Error as error:
+            # Capturar la excepción y manejar el error
+            print("Se produjo un error durante la ejecución de la consulta:", error)
+    
+    
+    def get_estadistica_ganancias(self,regional, sede):
+        try:
+
+            if regional is None and sede is None:
+                sql = '''SELECT MONTH(r.horaInicio) AS Mes, SUM(r.subtotal) AS Ganancias
+                        FROM reserva r GROUP BY MONTH(r.horaInicio);
+                    '''
+                self.cur.execute(sql)
+            elif sede is not None:
+                sql = '''   SELECT MONTH(r.horaInicio) AS Mes, SUM(r.subtotal) AS Ganancias
+                            FROM reserva r
+                            JOIN parqueadero p ON r.idParqueadero = p.idParqueadero
+                            WHERE p.idSede = %s
+                            GROUP BY MONTH(r.horaInicio);
+                    '''
+                values = (sede,)
+                self.cur.execute(sql, values)
+            elif regional is not None:
+                sql = '''SELECT MONTH(r.horaInicio) AS Mes, SUM(r.subtotal) AS Ganancias
+                        FROM reserva r
+                        JOIN parqueadero p ON r.idParqueadero = p.idParqueadero
+                        JOIN sede s ON p.idSede = s.idSede
+                        JOIN ubicacion u ON s.idUbicacion = u.idUbicacion
+                        WHERE u.fkUbicacion = %s
+                        GROUP BY MONTH(r.horaInicio);
+                    '''
+                values = (regional,)
+                self.cur.execute(sql, values)
+            res = self.cur.fetchall()
+            if res is None:
+                return []
+            return res
+        except mysql.connector.Error as error:
+            # Capturar la excepción y manejar el error
+            print("Se produjo un error durante la ejecución de la consulta:", error)
+    
+     
 class CaracteristicaDAOSQL(DAOGenericoSQL, DAOGen.CaracteristicaDAO):
 
     def get_carac_x_sede(self, idSede):
