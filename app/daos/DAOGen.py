@@ -138,6 +138,10 @@ class ReservaDAO(DAOGenerico):
     @abstractmethod
     def get_datos(self,idReserva):
         pass
+    
+    @abstractmethod
+    def get_report(self, idReserva, ciudad, region, sede, tipoParqueadero, fechaInicio, fechaFin, registroSalida, cliente, total, administrador, cantidad):
+        pass
 
 class LogDAO(DAOGenerico):
     @abstractmethod

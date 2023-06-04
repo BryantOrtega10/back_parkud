@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import os
 import pandas as pd
 import base64
 from reportlab.lib.pagesizes import letter
@@ -6,17 +7,18 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib import colors
 from io import BytesIO
 import json
+from app.daos.DAOFactory import DAOFactorySQL
 
 class ReporteDirector():
 
-    def __init__(self, reporte: ReporteGeneral):
+    def __init__(self, reporte):
         self._reporteGeneral = reporte
 
-    def build():
-        pass
+    def build(self):        
+        self._reporteGeneral.initialize()
+        return self._reporteGeneral.doExport()
 
 class ReporteGeneral(ABC):
-    self._export = None
 
     def __init__(self) :
         self._idReserva = False
@@ -30,30 +32,60 @@ class ReporteGeneral(ABC):
         self._cliente = False
         self._total = False
         self._administrador = False
-        self.cantidad = False
+        self._cantidad = False
+        self.export_obj = None
 
     @abstractmethod
     def initialize(self):
         pass
 
     @abstractmethod
-    def export(self):
+    def doExport(self):
         pass
-
+    
+    def obtenerDesdeBD(self):
+        return DAOFactorySQL.get_reserva_dao().get_report(self._idReserva,self._ciudad,self._region,self._sede,self._tipoParqueadero,self._fechaInicio,self._fechaFin,self._registroSalida,self._cliente,self._total,self._administrador,self._cantidad)
 
 class ReporteCiudad(ReporteGeneral):
-    def initialize(self):
-        pass
 
-    def export(self):
-        pass
+    def initialize(self):
+        self._idReserva = True
+        self._ciudad = True
+        self._region = True
+        self._sede = True
+
+    def doExport(self):
+        reporte = self.obtenerDesdeBD()
+        reporte = [{
+            "idReserva" : rep[0],
+            "ciudad" : rep[1],
+            "region" : rep[2],
+            "sede" : rep[3]
+        } for rep in reporte]
+        return self.export_obj.export(reporte)
 
 class ReporteClienteTotal(ReporteGeneral):
-    def initialize(self):
-        pass
 
-    def export(self):
-        pass
+    def initialize(self):
+        self._idReserva = True
+        self._tipoParqueadero = True
+        self._fechaInicio = True
+        self._fechaFin = True
+        self._cliente = True
+        self._total = True
+
+    def doExport(self):
+        reporte = self.obtenerDesdeBD()
+        print(reporte)
+        reporte = [{
+            "idReserva" : rep[0],
+            "tipoParqueadero" : rep[1],
+            "fechaInicio" : rep[2],
+            "fechaFin" : rep[3],
+            "cliente" : rep[4],
+            "total" : rep[5]
+        } for rep in reporte]
+        return self.export_obj.export(reporte)
 
 class Export(ABC):
 
@@ -124,7 +156,7 @@ class ExportExcel(Export):
         
         # Exportar el DataFrame a un archivo Excel
         df.to_excel(excel_buffer, index=False)
-        excel_buffer.save()
+        excel_buffer.close()
         
         # Leer el archivo Excel guardado en memoria
         with open('temp.xlsx', 'rb') as file:
@@ -132,9 +164,9 @@ class ExportExcel(Export):
         
         # Codificar el archivo Excel en Base64
         encoded_excel = base64.b64encode(excel_data).decode('utf-8')
-        
+        os.remove("temp.xlsx")
         return encoded_excel
 
-class ExportHtml(Export):
+class ExportJson(Export):
     def export(self, json_object):
-        pass
+        return json_object
