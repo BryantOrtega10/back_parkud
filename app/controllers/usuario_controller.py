@@ -17,27 +17,23 @@ usuario_bp = Blueprint('usuario', __name__)
 
 
 @token_required
-@usuario_bp.route('/config-general', methods=['POST'])
-def modificar_conf_general():
+@usuario_bp.route('/config-general/<string:req_id>', methods=['PUT'])
+def modificar_conf_general(req_id):
     usuario = validar_superadmin_token()
     if not isinstance(usuario, Usuario):
         return usuario, HTTPStatus.BAD_REQUEST
     
     json_recibido = request.get_json()
-    if 'correo_b' not in json_recibido or len(json_recibido['correo_b']) == 0:
-        return jsonify({"success": False, "error" : "Campo correo_b vacio"}), HTTPStatus.BAD_REQUEST
-
-    if 'n_intentos' not in json_recibido or len(json_recibido['n_intentos']) == 0:
-        return jsonify({"success": False, "error" : "Campo n_intentos vacio"}), HTTPStatus.BAD_REQUEST
+    if 'valor' not in json_recibido or len(json_recibido['valor']) == 0:
+        return jsonify({"success": False, "error" : "Campo valor vacio"}), HTTPStatus.BAD_REQUEST
     
-    req_correo_b = json_recibido["correo_b"]
-    req_n_intentos = json_recibido["n_intentos"]
-    configuracion_c = Configuracion(valor=req_correo_b,tipoDeDato='string',id="C_ADM")
-    configuracion_n = Configuracion(valor=req_n_intentos,tipoDeDato='int',id="N_FAI")
-    DAOFactorySQL.get_configuracion_dao().update(configuracion_c)
-    DAOFactorySQL.get_configuracion_dao().update(configuracion_n)
+    req_valor = json_recibido["valor"]
+    configuracion = Configuracion(id=req_id)
+    configuracion = DAOFactorySQL.get_configuracion_dao().read(configuracion)
+    configuracion.valor = req_valor
+    DAOFactorySQL.get_configuracion_dao().update(configuracion)
 
-    log = Log(mensaje="Modificó las configuraciones generales", ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    log = Log(mensaje="Modificó la configuración general", ip=request.remote_addr, idUsuario=usuario.idUsuario)
     DAOFactorySQL.get_log_dao().create(log)
 
     return jsonify({"success": True, "message": "Configuraciones generales modificadas"}), HTTPStatus.OK
@@ -56,7 +52,7 @@ def obtener_conf_general():
 
     log = Log(mensaje="Consultó las configuraciones generales", ip=request.remote_addr, idUsuario=usuario.idUsuario)
     DAOFactorySQL.get_log_dao().create(log)
-    
+
     return jsonify({"success": True, "message": "Configuraciones generales consultadas",
                      "configuraciones" : [
                          {"id" : configuracion_c.id, "valor" : configuracion_c.valor},

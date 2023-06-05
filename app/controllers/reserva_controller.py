@@ -39,7 +39,7 @@ def obtener_reserva(id_reserva):
         "nombreCliente" : reserva[5],
         "apellidoCliente" : reserva[6]
     }
-    log = Log(mensaje="Consultó la reserva " + id_reserva, ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    log = Log(mensaje="Consultó la reserva " + str(id_reserva), ip=request.remote_addr, idUsuario=usuario.idUsuario)
     DAOFactorySQL.get_log_dao().create(log)
     return jsonify({"success": True, "message" : "Consulta realizada con éxito", "reserva" : reserva}) , HTTPStatus.OK
 
@@ -65,7 +65,7 @@ def registrar_entrada(id_reserva):
     reserva.estado = 'A'
     DAOFactorySQL.get_reserva_dao().update(reserva)
 
-    log = Log(mensaje="Registró la entrada de la reserva " + id_reserva, ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    log = Log(mensaje="Registró la entrada de la reserva " + str(id_reserva), ip=request.remote_addr, idUsuario=usuario.idUsuario)
     DAOFactorySQL.get_log_dao().create(log)
 
     return jsonify({"success": True, "message" : "Entrada registrada con éxito"}) , HTTPStatus.OK
@@ -94,7 +94,7 @@ def enviar_registro():
     DAOFactorySQL.get_log_dao().create(log)
 
     msg = MIMEText(f'<h1>Solicitud de registro</h1>'\
-                f'<p>Has solicitado el registro en ParkUD, el enlace para registrarte es: <a href="http://google.com.co">Link</a></p>'\
+                f'<p>Has solicitado el registro en ParkUD, el enlace para registrarte es: <a href="http://3.133.170.252:3000/">Link</a></p>'\
                 f'<p>Cordialmente <br> ParkUD Colombia</p>'                   
                 , 'html')
 
@@ -132,8 +132,13 @@ def registrar_salida(id_reserva):
     fechaActual = datetime.datetime.now(ZoneInfo("America/Bogota"))
     reserva.registroSalida = fechaActual.strftime("%Y-%m-%d %H:%M:%S")
     
+    fechaActual = datetime.datetime.strptime(str(reserva.registroSalida), "%Y-%m-%d %H:%M:%S")
+
     fechaInicio = datetime.datetime.strptime(str(reserva.horaInicio), "%Y-%m-%d %H:%M:%S")
     fechaFin = datetime.datetime.strptime(str(reserva.horaSalida), "%Y-%m-%d %H:%M:%S")
+    print(fechaActual,fechaFin)
+
+
     if fechaActual > fechaFin:
         fechaFin = fechaActual
 
@@ -161,7 +166,7 @@ def registrar_salida(id_reserva):
     DAOFactorySQL.get_reserva_dao().update(reserva)
 
     #PAGO de tarjeta
-    log = Log(mensaje="Registró la salida de la reserva " + id_reserva, ip=request.remote_addr, idUsuario=usuario.idUsuario)
+    log = Log(mensaje="Registró la salida de la reserva " + str(id_reserva), ip=request.remote_addr, idUsuario=usuario.idUsuario)
     DAOFactorySQL.get_log_dao().create(log)
 
     return jsonify({"success": True, "message" : "Salida registrada con éxito" + msj}) , HTTPStatus.OK
@@ -235,7 +240,7 @@ def reservar():
     DAOFactorySQL.get_reserva_dao().create(reserva)
     log = Log(mensaje="Realizó una reserva", ip=request.remote_addr, idUsuario=usuario.idUsuario)
     DAOFactorySQL.get_log_dao().create(log)
-    return jsonify({"success": True, "message" : "Reserva registrada con éxito", "reserva": {
+    return jsonify({"success": True, "message" : "Reserva registrada con éxito, el id de la reserva es: " + str(reserva.idReserva), "reserva": {
         "idReserva" : reserva.idReserva,
         "horaInicio" : reserva.horaInicio,
         "horaSalida" : reserva.horaSalida
