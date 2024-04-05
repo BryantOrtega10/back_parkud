@@ -1,7 +1,7 @@
 <h1 align="center"> Park UD </h1>
 
 ## Descripción
-Este proyecto contiene el **backend** del sistema **Park UD**, el cual provee servicios de aparcamiento en las ciudades de Colombia.
+Este proyecto contiene el **backend** del sistema **Park UD**, el cual es un sistema centralizado para la gestión y operación integral de una red nacional de parqueaderos, ofreciendo a clientes servicios de reserva de parqueaderos y proveyendo a operadores y administradores servicios de control y gestión. Todo esto siguiendo todos los buenos principios de Ingeniería de Software aplicada
 
 ## :hammer: Principales funcionalidades
 Las principales funcionales de la aplicación son:
